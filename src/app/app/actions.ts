@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { validateDemoForm, type DemoForm, type FormErrors } from "@/lib/demo-rules";
-import { createDemo, deleteDemo, isSlugTaken, setPublished, updateDemo } from "@/lib/demo-store";
-import { readState, writeState } from "@/lib/dev-db";
+import { getDb } from "@/db";
+import { createDemo, deleteDemo, isSlugTaken, setPublished, updateDemo } from "@/db/repo";
 import { DEMO_LIMIT, UNLIMITED_EMAILS, getDesigner } from "@/lib/session";
 
 // Every action checks the Designer and re-validates input: actions are reachable by direct POST (spec 7.5).
@@ -37,47 +37,42 @@ export async function saveDemo(form: DemoForm, id?: string): Promise<SaveResult>
   if (id !== undefined && typeof id !== "string") return { ok: false, errors: {}, message: "Không tìm thấy Demo này." };
   const checked = validateDemoForm(normalizeForm(form, !id));
   if (!checked.ok) return checked;
-  const state = readState();
-  const now = new Date().toISOString();
+  const db = getDb();
 
   if (!id) {
-    const r = createDemo(state, designer, checked.value, { limit: DEMO_LIMIT, unlimitedEmails: UNLIMITED_EMAILS, now });
+    const r = await createDemo(db, designer, checked.value, { limit: DEMO_LIMIT, unlimitedEmails: UNLIMITED_EMAILS });
     if (!r.ok) {
       return r.error === "limit"
         ? { ok: false, errors: {}, message: `Beta giới hạn ${DEMO_LIMIT} Demo. Xóa một Demo để tạo mới.` }
         : { ok: false, errors: { slug: "Đường dẫn này đã có người dùng." } };
     }
-    writeState(r.state);
     revalidatePath("/app");
     return { ok: true, id: r.demo.id, slug: r.demo.slug };
   }
 
-  const r = updateDemo(state, designer, id, checked.value, now);
+  const r = await updateDemo(db, designer, id, checked.value);
   if (!r.ok) return r.error === "slug-taken" ? { ok: false, errors: { slug: "Đường dẫn này đã có người dùng." } } : { ok: false, errors: {}, message: "Không tìm thấy Demo này." };
-  writeState(r.state);
   revalidatePath("/app");
   return { ok: true, id, slug: checked.value.slug };
 }
 
 export async function isSlugAvailable(slug: string, id?: string) {
   await designerOrThrow();
-  return typeof slug === "string" && !isSlugTaken(readState(), slug, typeof id === "string" ? id : undefined);
+  return typeof slug === "string" && !(await isSlugTaken(getDb(), slug, typeof id === "string" ? id : undefined));
 }
 
 export async function publishDemo(id: string, isPublished: boolean) {
   const designer = await designerOrThrow();
-  const r = setPublished(readState(), designer, String(id), isPublished === true);
+  const r = await setPublished(getDb(), designer, String(id), isPublished === true);
   if (!r.ok) return false;
-  writeState(r.state);
   revalidatePath("/app");
   return true;
 }
 
 export async function removeDemo(id: string) {
   const designer = await designerOrThrow();
-  const r = deleteDemo(readState(), designer, String(id), new Date().toISOString());
+  const r = await deleteDemo(getDb(), designer, String(id));
   if (!r.ok) return false;
-  writeState(r.state);
   revalidatePath("/app");
   return true;
 }

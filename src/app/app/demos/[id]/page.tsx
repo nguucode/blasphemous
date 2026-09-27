@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
-import { listDemos } from "@/lib/demo-store";
-import { readState } from "@/lib/dev-db";
+import { getDb } from "@/db";
+import { findOwnedDemo } from "@/db/repo";
 import { demoBase, getDesigner } from "@/lib/session";
 import { DemoEditor } from "../../_components/demo-editor";
 
@@ -13,7 +13,7 @@ export default async function EditDemo({ params }: PageProps<"/app/demos/[id]">)
   const { id } = await params;
   const designer = (await getDesigner())!;
   // Only the owner's own, not-deleted Demos; anything else is a 404, never a 403 (spec 7.5).
-  const d = listDemos(readState(), designer).find((x) => x.id === id);
+  const d = await findOwnedDemo(getDb(), designer, id);
   if (!d) notFound();
 
   return (

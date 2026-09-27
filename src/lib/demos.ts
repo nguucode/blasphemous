@@ -1,7 +1,7 @@
 import "server-only";
 import type { Device, DeviceLink } from "@/components/device-view";
-import { deviceLinks, resolveSlug } from "./demo-store";
-import { readState } from "./dev-db";
+import { getDb } from "@/db";
+import { deviceLinks, resolveSlug } from "@/db/repo";
 
 // A Demo as the Viewer page needs it (spec 7.1).
 export type PublishedDemo = {
@@ -13,7 +13,7 @@ export type PublishedDemo = {
 };
 
 export async function lookupDemo(slug: string): Promise<{ demo: PublishedDemo } | { redirectTo: string } | undefined> {
-  const found = resolveSlug(readState(), slug);
+  const found = await resolveSlug(getDb(), slug);
   if (!found || "redirectTo" in found) return found;
   const { name, responsiveDesktop, backgroundColor } = found.demo;
   return { demo: { name, slug, links: deviceLinks(found.demo), responsiveDesktop, backgroundColor } };

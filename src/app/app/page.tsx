@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { connection } from "next/server";
-import { deviceLinks, demoLimit, listDemos } from "@/lib/demo-store";
-import { readState } from "@/lib/dev-db";
+import { getDb } from "@/db";
+import { deviceLinks, demoLimit, listDemos } from "@/db/repo";
 import { DEMO_LIMIT, UNLIMITED_EMAILS, demoBase, getDesigner } from "@/lib/session";
 import { DemoLinkCell } from "./_components/copy-button";
 
@@ -13,7 +13,7 @@ const cta =
 export default async function Dashboard({ searchParams }: PageProps<"/app">) {
   await connection();
   const designer = (await getDesigner())!;
-  const demos = listDemos(readState(), designer);
+  const demos = await listDemos(getDb(), designer);
   const limit = demoLimit(designer, DEMO_LIMIT, UNLIMITED_EMAILS);
   const full = demos.length >= limit;
   const base = await demoBase();

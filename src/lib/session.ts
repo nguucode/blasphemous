@@ -1,6 +1,6 @@
 import "server-only";
 import { headers } from "next/headers";
-import type { Designer } from "./demo-store";
+import type { Designer } from "@/db/repo";
 import { createClient } from "./supabase/server";
 
 // The signed-in Designer (Supabase Auth, spec 5 and 8.2), or null.
