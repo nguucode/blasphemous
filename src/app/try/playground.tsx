@@ -3,8 +3,10 @@
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { buildEmbedUrl, parseFigmaLink, type FigmaLinkError } from "@/lib/figma-link";
+import { PHONE_MODEL } from "@/lib/phone-model";
 
 const Phone3D = dynamic(() => import("@/components/phone-3d").then((m) => m.Phone3D), { ssr: false });
+
 
 type Device = "desktop" | "tablet" | "phone";
 type Link = { fileKey: string; nodeId: string };
@@ -146,6 +148,11 @@ export function Playground() {
             Đưa về thẳng
           </button>
           <span className="hidden sm:inline">Kéo nền để xoay máy</span>
+          <span className="hidden text-xs text-white/50 lg:inline">
+            Mô hình “<a href={PHONE_MODEL.credit.url} target="_blank" rel="noopener" className="underline">{PHONE_MODEL.credit.title}</a>” của{" "}
+            <a href={PHONE_MODEL.credit.authorUrl} target="_blank" rel="noopener" className="underline">{PHONE_MODEL.credit.author}</a>,{" "}
+            <a href={PHONE_MODEL.credit.licenseUrl} target="_blank" rel="noopener" className="underline">{PHONE_MODEL.credit.license}</a>
+          </span>
         </div>
       )}
 
