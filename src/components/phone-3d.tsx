@@ -17,6 +17,34 @@ export const SCREEN_CSS_WIDTH = 393; // iPhone logical points; height follows th
 const FOV = 30;
 const MAX_TILT_X = 0.6;
 
+function roundedRect(w: number, h: number, r: number) {
+  const s = new THREE.Shape();
+  const x = -w / 2, y = -h / 2;
+  s.moveTo(x + r, y);
+  s.lineTo(x + w - r, y);
+  s.absarc(x + w - r, y + r, r, -Math.PI / 2, 0);
+  s.lineTo(x + w, y + h - r);
+  s.absarc(x + w - r, y + h - r, r, 0, Math.PI / 2);
+  s.lineTo(x + r, y + h);
+  s.absarc(x + r, y + h - r, r, Math.PI / 2, Math.PI);
+  s.lineTo(x, y + r);
+  s.absarc(x + r, y + r, r, Math.PI, Math.PI * 1.5);
+  return s;
+}
+
+// The screen mesh is a rounded rectangle. Its vertex closest to a sharp corner lies on the arc at 45°,
+// offset o = r(1 - 1/√2) from the corner on each axis, which gives the radius back.
+function cornerRadius(mesh: THREE.Mesh, box: THREE.Box3) {
+  const pos = mesh.geometry.attributes.position;
+  const v = new THREE.Vector3();
+  let nearest = Infinity;
+  for (let i = 0; i < pos.count; i++) {
+    v.fromBufferAttribute(pos, i).applyMatrix4(mesh.matrixWorld);
+    nearest = Math.min(nearest, v.x - box.min.x + (box.max.y - v.y));
+  }
+  return nearest / 2 / (1 - Math.SQRT1_2);
+}
+
 // Loads the model in millimetres, facing +z, centred on the origin.
 async function loadPhone() {
   const { scene: model } = await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(PHONE_MODEL.url);
@@ -31,6 +59,7 @@ async function loadPhone() {
   let screenMesh: THREE.Mesh | undefined;
   let logoMesh: THREE.Mesh | undefined;
   let panel: THREE.Material | undefined;
+  let islandMesh: THREE.Mesh | undefined;
   phone.traverse((o) => {
     if (!(o instanceof THREE.Mesh)) return;
     const material = o.material as THREE.Material;
@@ -38,8 +67,20 @@ async function loadPhone() {
     if (material.name === PHONE_MODEL.logo.material) logoMesh = o;
     if (material.name === PHONE_MODEL.logo.paintAs) panel = material;
     if (PHONE_MODEL.hiddenMaterials.includes(material.name)) o.visible = false;
+    if (material.name === PHONE_MODEL.islandMaterial) islandMesh = o;
   });
   if (logoMesh && panel) logoMesh.material = panel;
+  if (islandMesh) {
+    const box = new THREE.Box3().setFromObject(islandMesh);
+    const size = box.getSize(new THREE.Vector3());
+    const capsule = new THREE.Mesh(
+      new THREE.ShapeGeometry(roundedRect(size.x, size.y, size.y / 2), 24),
+      new THREE.MeshBasicMaterial({ color: 0x000000 }),
+    );
+    capsule.position.set(...box.getCenter(new THREE.Vector3()).toArray());
+    capsule.position.z = box.max.z + 0.05;
+    phone.add(capsule);
+  }
   if (!screenMesh) throw new Error(`Model has no ${PHONE_MODEL.screenMaterial} mesh`);
   // Writes alpha 0 so the CSS3D iframe shows through. Pushed back a hair so the Dynamic Island
   // and front camera, which sit in the same plane, win the depth test.
@@ -47,9 +88,11 @@ async function loadPhone() {
     color: 0x000000, opacity: 0, blending: THREE.NoBlending, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1,
   });
 
+  const screen = new THREE.Box3().setFromObject(screenMesh);
   return {
     phone,
-    screen: new THREE.Box3().setFromObject(screenMesh),
+    screen,
+    screenRadius: cornerRadius(screenMesh, screen),
     body: new THREE.Box3().setFromObject(phone).getSize(new THREE.Vector3()),
   };
 }
@@ -112,12 +155,15 @@ export function Phone3D({ children, resetSignal }: { children: ReactNode; resetS
 
     let disposed = false;
     loadPhone().then(
-      ({ phone, screen, body: size }) => {
+      ({ phone, screen, screenRadius, body: size }) => {
         if (disposed) return;
         rotor.add(phone);
         const w = screen.max.x - screen.min.x;
         const h = screen.max.y - screen.min.y;
         screenEl.style.height = `${Math.round((SCREEN_CSS_WIDTH * h) / w)}px`;
+        // Outside the phone's silhouette the canvas is transparent, so the iframe's own corners must be rounded too.
+        screenEl.style.borderRadius = `${(SCREEN_CSS_WIDTH * screenRadius) / w}px`;
+        screenEl.style.overflow = "hidden";
         const obj = new CSS3DObject(screenEl);
         obj.scale.setScalar(w / SCREEN_CSS_WIDTH);
         obj.position.copy(screen.getCenter(new THREE.Vector3()));

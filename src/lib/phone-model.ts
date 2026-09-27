@@ -6,6 +6,8 @@ export const PHONE_MODEL = {
   hiddenMaterials: ["17ProMax_glass"],
   // The Apple logo (a trademark) fills a cutout in the back panel, so it is repainted with the panel's material, not hidden.
   logo: { material: "17ProMax_Logo", paintAs: "17ProMax_color2" },
+  // Dynamic Island outline. The model leaves its inside open, so a solid black capsule is drawn over it.
+  islandMaterial: "17ProMax_2112",
   credit: {
     title: "iPhone 17 Pro Max",
     url: "https://sketchfab.com/3d-models/iphone-17-pro-max-e7c5674931ae4b0ea1b4eaaabb159fdb",
