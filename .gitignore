@@ -43,3 +43,6 @@ next-env.d.ts
 # local
 .claude/.cc-writes/
 .claude/settings.local.json
+
+# local dev data (lib/dev-db.ts)
+/.data/
