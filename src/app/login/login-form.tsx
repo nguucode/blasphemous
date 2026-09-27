@@ -24,7 +24,14 @@ export function LoginForm({ next, failed }: { next: string; failed: boolean }) {
     const { error } = await createClient().auth.signInWithOtp({ email: email.trim(), options: { emailRedirectTo: callbackUrl(next) } });
     if (error) {
       setState("idle");
-      return setError(error.status === 429 ? "Gửi quá nhiều lần. Đợi một lát rồi thử lại." : "Chưa gửi được email. Thử lại sau.");
+      if (error.status !== 429) return setError("Chưa gửi được email. Thử lại sau.");
+      // Supabase has two 429s: a per-address wait ("…after 42 seconds") and a per-hour cap for the whole project.
+      const seconds = error.message.match(/(\d+) seconds?/)?.[1];
+      return setError(
+        seconds
+          ? `Vừa gửi link tới email này. Đợi ${seconds} giây rồi thử lại.`
+          : "Đang có quá nhiều email đăng nhập được gửi. Thử lại sau ít phút, hoặc tiếp tục với Google.",
+      );
     }
     setState("sent");
   };
