@@ -32,9 +32,9 @@ export default function Home() {
             Dán link prototype cho phone, tablet, desktop. Khách mở một đường dẫn gọn, tự bấm thử, không cần tài khoản Figma.
           </p>
           <div className="mt-8 flex animate-rise flex-wrap items-center gap-x-6 gap-y-3 [animation-delay:300ms]">
-            {/* Goes to /login once auth exists (spec 8.2); until then the public playground. */}
+            {/* /app sends signed-out visitors to /login and brings them back (spec 8.1). */}
             <Link
-              href="/try"
+              href="/app"
               className="inline-flex min-h-11 items-center rounded-full bg-cta px-6 text-[17px] text-white transition-transform duration-150 hover:bg-cta-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-link active:scale-[0.97]"
             >
               Tạo Demo miễn phí

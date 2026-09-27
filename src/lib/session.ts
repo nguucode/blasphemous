@@ -1,12 +1,14 @@
 import "server-only";
 import { headers } from "next/headers";
 import type { Designer } from "./demo-store";
+import { createClient } from "./supabase/server";
 
-// ponytail: TEMPORARY until Supabase Auth (spec 5, 8.2). In development every request is one fixed
-// Designer; in production there is no Designer at all, so /app and its actions stay closed.
+// The signed-in Designer (Supabase Auth, spec 5 and 8.2), or null.
 export async function getDesigner(): Promise<Designer | null> {
-  if (process.env.NODE_ENV === "production") return null;
-  return { id: "dev-designer", email: process.env.DEV_DESIGNER_EMAIL ?? "dev@localhost" };
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
+  const claims = data?.claims;
+  return claims?.sub && typeof claims.email === "string" ? { id: claims.sub, email: claims.email } : null;
 }
 
 export const DEMO_LIMIT = Number(process.env.DEMO_LIMIT ?? 3);
