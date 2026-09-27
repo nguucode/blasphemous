@@ -28,12 +28,17 @@ async function loadPhone() {
   phone.updateMatrixWorld(true);
 
   let screenMesh: THREE.Mesh | undefined;
+  let logoMesh: THREE.Mesh | undefined;
+  let panel: THREE.Material | undefined;
   phone.traverse((o) => {
     if (!(o instanceof THREE.Mesh)) return;
-    const name = (o.material as THREE.Material).name;
-    if (name === PHONE_MODEL.screenMaterial) screenMesh = o;
-    if (name === PHONE_MODEL.glassMaterial) o.visible = false; // sits in front of the screen and would cover the hole
+    const material = o.material as THREE.Material;
+    if (material.name === PHONE_MODEL.screenMaterial) screenMesh = o;
+    if (material.name === PHONE_MODEL.logo.material) logoMesh = o;
+    if (material.name === PHONE_MODEL.logo.paintAs) panel = material;
+    if (PHONE_MODEL.hiddenMaterials.includes(material.name)) o.visible = false;
   });
+  if (logoMesh && panel) logoMesh.material = panel;
   if (!screenMesh) throw new Error(`Model has no ${PHONE_MODEL.screenMaterial} mesh`);
   // Writes alpha 0 so the CSS3D iframe shows through. Pushed back a hair so the Dynamic Island
   // and front camera, which sit in the same plane, win the depth test.
