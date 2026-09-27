@@ -6,6 +6,7 @@ import * as THREE from "three";
 import { CSS3DObject, CSS3DRenderer } from "three/addons/renderers/CSS3DRenderer.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
 import { PHONE_MODEL } from "@/lib/phone-model";
 
 // Screen content is a real DOM node (the Figma iframe) placed by CSS3DRenderer underneath a
@@ -18,7 +19,7 @@ const MAX_TILT_X = 0.6;
 
 // Loads the model in millimetres, facing +z, centred on the origin.
 async function loadPhone() {
-  const { scene: model } = await new GLTFLoader().loadAsync(PHONE_MODEL.url);
+  const { scene: model } = await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(PHONE_MODEL.url);
   model.scale.setScalar(1000); // metres → mm
   model.rotation.y = Math.PI; // model's screen faces -z
   const phone = new THREE.Group();
