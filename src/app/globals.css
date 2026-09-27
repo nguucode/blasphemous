@@ -1,0 +1,30 @@
+@import "tailwindcss";
+@import "@radix-ui/colors/gray.css";
+@import "@radix-ui/colors/gray-dark.css";
+@import "@radix-ui/colors/blue.css";
+@import "@radix-ui/colors/blue-dark.css";
+@import "@radix-ui/colors/red.css";
+@import "@radix-ui/colors/red-dark.css";
+
+@theme {
+  --color-surface: var(--gray-1);
+  --color-surface-subtle: var(--gray-2);
+  --color-ui: var(--gray-3);
+  --color-ui-hover: var(--gray-4);
+  --color-ui-active: var(--gray-5);
+  --color-border: var(--gray-6);
+  --color-border-input: var(--gray-7);
+  --color-ring: var(--blue-8);
+  --color-text: var(--gray-12);
+  --color-text-muted: var(--gray-11);
+  --color-text-danger: var(--red-11);
+  --color-accent: var(--blue-9);
+  --color-accent-hover: var(--blue-10);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--color-surface);
+  color: var(--color-text);
+}

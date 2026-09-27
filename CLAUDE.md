@@ -6,3 +6,5 @@ Mọi tài liệu dự án (thuật ngữ, phỏng vấn, wayfinder map, issues,
 
 Đọc `CLAUDE.md` ở gốc vault trước khi ghi (frontmatter, `_context.md`, `_system/agent-log.md`).
 Index dự án: `_context.md`. Tiến độ: `blasphemous-kanban.md`. Đổi trạng thái issue thì cập nhật cả thẻ trên board.
+
+@AGENTS.md
