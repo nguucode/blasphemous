@@ -13,7 +13,7 @@ export type Db = PgDatabase<PgQueryResultHKT, typeof schema>;
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
 type Q = Db | Tx;
 
-export type Designer = { id: string; email: string };
+export type Designer = { id: string; email: string; isAnonymous?: boolean };
 export type DemoInput = DemoValue;
 export type DemoRecord = DemoValue & {
   id: string;

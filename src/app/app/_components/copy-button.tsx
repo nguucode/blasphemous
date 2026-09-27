@@ -1,10 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { demoUrl, displayUrl } from "@/lib/demo-url";
 
-// demoBase comes from the server (lib/session demoBase): "https://bls.to", or this dev server's origin.
-export const demoUrl = (demoBase: string, slug: string) => `${demoBase}/${slug}`;
-export const displayUrl = (demoBase: string, slug: string) => demoUrl(demoBase, slug).replace(/^https?:\/\//, "");
 
 export function CopyButton({ text, className, label = "Copy link" }: { text: string; className?: string; label?: string }) {
   const [copied, setCopied] = useState(false);

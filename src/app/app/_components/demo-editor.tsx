@@ -8,7 +8,7 @@ import { FORM_DEVICES, suggestSlug, validateDemoForm, type DemoForm, type FormEr
 import { parseFigmaLink } from "@/lib/figma-link";
 import { isReservedSlug, isSlugFormat } from "@/lib/slug";
 import { isSlugAvailable, publishDemo, removeDemo, saveDemo } from "../actions";
-import { CopyButton, demoUrl, displayUrl } from "./copy-button";
+import { displayUrl } from "@/lib/demo-url";
 
 // Create and edit screen, spec 8.4: form on the left, a live Viewer preview on the right.
 
@@ -45,7 +45,6 @@ export function DemoEditor({ demo, demoBase }: { demo?: EditorDemo; demoBase: st
   const [serverErrors, setServerErrors] = useState<FormErrors>({});
   const [message, setMessage] = useState<string>();
   const [saving, setSaving] = useState(false);
-  const [created, setCreated] = useState<string>();
   const [isPublished, setIsPublished] = useState(demo?.isPublished ?? true);
 
   const set = <K extends keyof DemoForm>(key: K, value: DemoForm[K]) => {
@@ -103,8 +102,8 @@ export function DemoEditor({ demo, demoBase }: { demo?: EditorDemo; demoBase: st
       setMessage(r.message);
       return focusFirstError(r.errors);
     }
-    if (isNew) setCreated(r.slug);
-    else router.push("/app?saved=1");
+    // Own route for the success screen: saving re-renders /app/new, which would drop any in-page state.
+    router.push(isNew ? `/app/demos/${r.id}/ready` : "/app?saved=1");
   };
 
   const togglePublished = async () => {
@@ -120,7 +119,6 @@ export function DemoEditor({ demo, demoBase }: { demo?: EditorDemo; demoBase: st
     if (ok && (await removeDemo(demo!.id))) router.push("/app");
   };
 
-  if (created) return <Created slug={created} name={form.name} demoBase={demoBase} />;
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,27rem)_minmax(0,1fr)]">
@@ -347,25 +345,5 @@ function Switch({ checked, onChange }: { checked: boolean; onChange: (v: boolean
     >
       <span className={`absolute top-[2px] left-[2px] size-[27px] rounded-full bg-white shadow transition-transform duration-300 ${checked ? "translate-x-5" : ""}`} />
     </button>
-  );
-}
-
-function Created({ slug, name, demoBase }: { slug: string; name: string; demoBase: string }) {
-  const url = demoUrl(demoBase, slug);
-  return (
-    <div className="mx-auto flex max-w-2xl animate-rise flex-col items-center py-16 text-center">
-      <p className="text-[17px] text-ink-secondary">“{name.trim()}” đã sẵn sàng.</p>
-      <h1 className="mt-2 text-[40px] leading-tight font-semibold tracking-[-0.015em] md:text-[56px]">Gửi link này cho khách.</h1>
-      <p className="mt-8 rounded-[20px] bg-stage-raised px-6 py-4 font-mono text-[19px] break-all text-ink md:text-[24px]">{displayUrl(demoBase, slug)}</p>
-      <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-3">
-        <CopyButton text={url} className="min-h-11 rounded-full bg-cta px-6 text-[17px] text-white hover:bg-cta-hover active:scale-[0.97]" />
-        <a href={url} target="_blank" rel="noopener" className="min-h-11 content-center text-[17px] text-link hover:underline">
-          Mở trang khách xem ›
-        </a>
-        <Link href="/app" className="min-h-11 content-center text-[17px] text-link hover:underline">
-          Về danh sách
-        </Link>
-      </div>
-    </div>
   );
 }

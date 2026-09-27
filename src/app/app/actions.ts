@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { validateDemoForm, type DemoForm, type FormErrors } from "@/lib/demo-rules";
 import { getDb } from "@/db";
 import { createDemo, deleteDemo, isSlugTaken, setPublished, updateDemo } from "@/db/repo";
-import { DEMO_LIMIT, UNLIMITED_EMAILS, getDesigner } from "@/lib/session";
+import { getDesigner, getOrCreateDesigner, limitFor } from "@/lib/session";
 
 // Every action checks the Designer and re-validates input: actions are reachable by direct POST (spec 7.5).
 
@@ -33,17 +33,25 @@ function normalizeForm(raw: unknown, isNew: boolean): DemoForm {
 }
 
 export async function saveDemo(form: DemoForm, id?: string): Promise<SaveResult> {
-  const designer = await designerOrThrow();
   if (id !== undefined && typeof id !== "string") return { ok: false, errors: {}, message: "Không tìm thấy Demo này." };
   const checked = validateDemoForm(normalizeForm(form, !id));
   if (!checked.ok) return checked;
+  // Creating is open to everyone: the first save gives this browser an anonymous Designer.
+  let designer;
+  try {
+    designer = id ? await designerOrThrow() : await getOrCreateDesigner();
+  } catch (e) {
+    console.error(e);
+    return { ok: false, errors: {}, message: "Chưa lưu được Demo. Thử lại sau ít phút." };
+  }
   const db = getDb();
 
   if (!id) {
-    const r = await createDemo(db, designer, checked.value, { limit: DEMO_LIMIT, unlimitedEmails: UNLIMITED_EMAILS });
+    const limits = limitFor(designer);
+    const r = await createDemo(db, designer, checked.value, limits);
     if (!r.ok) {
       return r.error === "limit"
-        ? { ok: false, errors: {}, message: `Beta giới hạn ${DEMO_LIMIT} Demo. Xóa một Demo để tạo mới.` }
+        ? { ok: false, errors: {}, message: `Mỗi trình duyệt tạo được ${limits.limit} Demo. Xóa Demo hiện có để tạo mới.` }
         : { ok: false, errors: { slug: "Đường dẫn này đã có người dùng." } };
     }
     revalidatePath("/app");
@@ -56,8 +64,8 @@ export async function saveDemo(form: DemoForm, id?: string): Promise<SaveResult>
   return { ok: true, id, slug: checked.value.slug };
 }
 
+// Read-only and open to everyone: whether a slug exists is already public through the Viewer.
 export async function isSlugAvailable(slug: string, id?: string) {
-  await designerOrThrow();
   return typeof slug === "string" && !(await isSlugTaken(getDb(), slug, typeof id === "string" ? id : undefined));
 }
 

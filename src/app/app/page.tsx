@@ -2,7 +2,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { getDb } from "@/db";
 import { deviceLinks, demoLimit, listDemos } from "@/db/repo";
-import { DEMO_LIMIT, UNLIMITED_EMAILS, demoBase, requireDesigner } from "@/lib/session";
+import { demoBase, limitFor, requireDesigner } from "@/lib/session";
 import { DemoLinkCell } from "./_components/copy-button";
 
 // Dashboard, spec 8.3.
@@ -14,7 +14,8 @@ export default async function Dashboard({ searchParams }: PageProps<"/app">) {
   await connection();
   const designer = await requireDesigner();
   const demos = await listDemos(getDb(), designer);
-  const limit = demoLimit(designer, DEMO_LIMIT, UNLIMITED_EMAILS);
+  const { limit: baseLimit, unlimitedEmails } = limitFor(designer);
+  const limit = demoLimit(designer, baseLimit, unlimitedEmails);
   const full = demos.length >= limit;
   const base = await demoBase();
   const { saved } = await searchParams;
@@ -47,7 +48,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/app">) {
 
       {full && (
         <p className="mt-4 text-[15px] text-ink-secondary">
-          Beta giới hạn {limit} Demo. Xóa một Demo để tạo mới.{" "}
+          {designer.isAnonymous ? `Mỗi trình duyệt tạo được ${limit} Demo.` : `Beta giới hạn ${limit} Demo.`} Xóa một Demo để tạo mới.{" "}
           <a href="mailto:hello@blasphemous.app?subject=C%E1%BA%A7n%20th%C3%AAm%20Demo" className="text-link hover:underline">
             Cần thêm? Báo cho mình ›
           </a>
