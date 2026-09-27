@@ -2,12 +2,12 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { getDb } from "@/db";
 import { demoLimit, listDemos } from "@/db/repo";
-import { DEMO_LIMIT, UNLIMITED_EMAILS, demoBase, getDesigner } from "@/lib/session";
+import { DEMO_LIMIT, UNLIMITED_EMAILS, demoBase, requireDesigner } from "@/lib/session";
 import { DemoEditor } from "../_components/demo-editor";
 
 export default async function NewDemo() {
   await connection();
-  const designer = (await getDesigner())!;
+  const designer = await requireDesigner("/app/new");
   const limit = demoLimit(designer, DEMO_LIMIT, UNLIMITED_EMAILS);
 
   // Spec 8.3: arriving here with no free slot shows the limit message instead of the form.

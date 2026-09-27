@@ -1,14 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { getDesigner } from "@/lib/session";
+import { requireDesigner } from "@/lib/session";
 import { signOut } from "./sign-out";
 
 export const metadata: Metadata = { title: "Demo của bạn · Blasphemous", robots: { index: false } };
 
 export default async function AppLayout({ children }: LayoutProps<"/app">) {
-  const designer = await getDesigner();
-  if (!designer) redirect("/login?next=/app");
+  const designer = await requireDesigner();
 
   return (
     <div className="min-h-[100dvh] bg-stage font-display text-ink antialiased">

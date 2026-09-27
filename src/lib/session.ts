@@ -1,5 +1,6 @@
 import "server-only";
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import type { Designer } from "@/db/repo";
 import { createClient } from "./supabase/server";
 
@@ -9,6 +10,13 @@ export async function getDesigner(): Promise<Designer | null> {
   const { data } = await supabase.auth.getClaims();
   const claims = data?.claims;
   return claims?.sub && typeof claims.email === "string" ? { id: claims.sub, email: claims.email } : null;
+}
+
+// For every /app page and layout: they render in parallel, so a layout's redirect does not protect its page.
+export async function requireDesigner(next = "/app"): Promise<Designer> {
+  const designer = await getDesigner();
+  if (!designer) redirect(`/login?next=${encodeURIComponent(next)}`);
+  return designer;
 }
 
 export const DEMO_LIMIT = Number(process.env.DEMO_LIMIT ?? 3);
