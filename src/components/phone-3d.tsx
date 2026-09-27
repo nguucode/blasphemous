@@ -193,6 +193,8 @@ export function Phone3D({ children, resetSignal }: { children: ReactNode; resetS
       target.current.x = THREE.MathUtils.clamp(target.current.x + (e.clientY - drag.y) * 0.008, -MAX_TILT_X, MAX_TILT_X);
       drag = { x: e.clientX, y: e.clientY };
     };
+    // touch-action: pan-y lets a vertical swipe scroll the page (the browser then cancels the drag);
+    // horizontal swipes still turn the phone.
     const up = () => (drag = null);
     container.addEventListener("pointerdown", down);
     container.addEventListener("pointermove", move);
@@ -236,7 +238,7 @@ export function Phone3D({ children, resetSignal }: { children: ReactNode; resetS
   }, [screenEl]);
 
   return (
-    <div ref={containerRef} className="relative h-full w-full cursor-grab touch-none select-none active:cursor-grabbing">
+    <div ref={containerRef} className="relative h-full w-full cursor-grab touch-pan-y select-none active:cursor-grabbing">
       {loaded !== true && (
         <p className="pointer-events-none absolute inset-0 z-10 grid place-items-center text-sm text-ink-secondary">
           {loaded === "error" ? "Không tải được mô hình điện thoại." : "Đang tải mô hình…"}

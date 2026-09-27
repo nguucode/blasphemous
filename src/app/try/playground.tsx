@@ -1,22 +1,9 @@
 "use client";
 
-import dynamic from "next/dynamic";
-import { useEffect, useRef, useState, type FormEvent } from "react";
-import { buildEmbedUrl, parseFigmaLink, type FigmaLinkError } from "@/lib/figma-link";
+import { useState, type FormEvent } from "react";
+import { DEVICES, DeviceStage, DeviceSwitcher, type Device, type DeviceLink } from "@/components/device-view";
+import { parseFigmaLink, type FigmaLinkError } from "@/lib/figma-link";
 import { PHONE_MODEL } from "@/lib/phone-model";
-
-const Phone3D = dynamic(() => import("@/components/phone-3d").then((m) => m.Phone3D), { ssr: false });
-
-
-type Device = "desktop" | "tablet" | "phone";
-type Link = { fileKey: string; nodeId: string };
-
-const DEVICES: { id: Device; label: string }[] = [
-  { id: "desktop", label: "Desktop" },
-  { id: "tablet", label: "Tablet" },
-  { id: "phone", label: "Mobile" },
-];
-const FLAT_SIZE = { desktop: { w: 1440, h: 900 }, tablet: { w: 834, h: 1194 } };
 
 const ERRORS: Record<FigmaLinkError | "other-file", string> = {
   "not-figma": "Đây không phải link prototype Figma.",
@@ -25,51 +12,10 @@ const ERRORS: Record<FigmaLinkError | "other-file", string> = {
   "other-file": "Link này thuộc file Figma khác với các Device đã nhập.",
 };
 
-function Screen({ link, responsive }: { link?: Link; responsive: boolean }) {
-  const src = link && buildEmbedUrl({ ...link, responsive });
-  const [loadedSrc, setLoadedSrc] = useState<string>();
-  if (!src) {
-    return (
-      <div className="grid h-full place-items-center bg-stage-raised p-10 text-center font-display text-[17px] leading-snug tracking-[-0.022em] text-ink-secondary">
-        Dán link prototype Figma vào thanh bên dưới để xem trên máy.
-      </div>
-    );
-  }
-  return (
-    <div className="relative h-full w-full">
-      <iframe key={src} src={src} title="Prototype" allowFullScreen className="h-full w-full border-0" onLoad={() => setLoadedSrc(src)} />
-      {loadedSrc !== src && (
-        <div className="absolute inset-0 grid place-items-center bg-stage-raised text-sm text-ink-secondary">Đang tải prototype…</div>
-      )}
-    </div>
-  );
-}
-
-function FlatDevice({ size, children }: { size: { w: number; h: number }; children: React.ReactNode }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(0);
-  useEffect(() => {
-    const el = ref.current!;
-    const ro = new ResizeObserver(() => setScale(Math.min(el.clientWidth / size.w, el.clientHeight / size.h, 1)));
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [size]);
-  return (
-    <div ref={ref} className="relative h-full w-full">
-      <div
-        className="absolute top-1/2 left-1/2 origin-top-left overflow-hidden rounded-[20px] bg-stage-raised shadow-[0_40px_120px_-20px_rgb(0_0_0/0.9)] ring-1 ring-white/10"
-        style={{ width: size.w, height: size.h, transform: `scale(${scale}) translate(-50%, -50%)` }}
-      >
-        {children}
-      </div>
-    </div>
-  );
-}
-
 export function Playground() {
   const [device, setDevice] = useState<Device>("phone");
   const [opened, setOpened] = useState<Set<Device>>(new Set(["phone"]));
-  const [links, setLinks] = useState<Partial<Record<Device, Link>>>({});
+  const [links, setLinks] = useState<Partial<Record<Device, DeviceLink>>>({});
   const [input, setInput] = useState("");
   const [error, setError] = useState<string>();
   const [resetSignal, setResetSignal] = useState(0);
@@ -108,44 +54,17 @@ export function Playground() {
       />
 
       <nav className="relative flex animate-rise justify-center px-4 pt-4">
-        <div
-          role="group"
-          aria-label="Chọn thiết bị"
-          className="inline-flex gap-1 rounded-[18px] bg-glass-strong p-1 shadow-[inset_0_1px_0_rgb(255_255_255/0.08)] backdrop-blur-xl"
-        >
-          {DEVICES.map((d) => (
-            <button
-              key={d.id}
-              type="button"
-              aria-pressed={device === d.id}
-              onClick={() => choose(d.id)}
-              className="min-h-11 min-w-11 cursor-pointer rounded-[14px] px-5 text-sm tracking-[-0.016em] text-ink-secondary transition-colors duration-300 hover:text-ink focus-visible:outline-2 focus-visible:outline-link aria-pressed:bg-white/12 aria-pressed:font-semibold aria-pressed:text-ink"
-            >
-              {d.label}
-            </button>
-          ))}
-        </div>
+        <DeviceSwitcher devices={DEVICES.map((d) => d.id)} value={device} onChange={choose} />
       </nav>
 
-      {/* Each device keeps its own iframe once opened; switching only hides, never remounts (spec 8.6). */}
       <div className={`relative min-h-0 pb-44 ${device === "phone" ? "lg:pb-8" : ""}`}>
-        {opened.has("phone") && (
-          <div hidden={device !== "phone"} className="h-full">
-            <Phone3D resetSignal={resetSignal}>
-              <Screen link={links.phone} responsive={false} />
-            </Phone3D>
-          </div>
-        )}
-        {(["desktop", "tablet"] as const).map(
-          (d) =>
-            opened.has(d) && (
-              <div key={d} hidden={device !== d} className="h-full px-6">
-                <FlatDevice size={FLAT_SIZE[d]}>
-                  <Screen link={links[d]} responsive={false} />
-                </FlatDevice>
-              </div>
-            ),
-        )}
+        <DeviceStage
+          device={device}
+          opened={opened}
+          links={links}
+          resetSignal={resetSignal}
+          emptyText="Dán link prototype Figma vào thanh bên dưới để xem trên máy."
+        />
       </div>
 
       {/* Bottom-left: headline and phone controls, like the product name on a launch page.
