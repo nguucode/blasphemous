@@ -17,7 +17,10 @@ export const DEVICES: { id: Device; label: string }[] = [
   { id: "tablet", label: "Tablet" },
   { id: "phone", label: "Mobile" },
 ];
-const FLAT_SIZE = { desktop: { w: 1440, h: 900 }, tablet: { w: 834, h: 1194 } };
+export type Size = { w: number; h: number };
+// Spec 8.6: sizes a Viewer can pick when the Designer turned on Responsive Desktop.
+export const DESKTOP_SIZES: Size[] = [{ w: 1280, h: 800 }, { w: 1440, h: 900 }, { w: 1920, h: 1080 }];
+const FLAT_SIZE = { desktop: DESKTOP_SIZES[1], tablet: { w: 834, h: 1194 } };
 
 export function DeviceSwitcher({ devices, value, onChange }: { devices: Device[]; value: Device; onChange: (d: Device) => void }) {
   return (
@@ -41,8 +44,8 @@ export function DeviceSwitcher({ devices, value, onChange }: { devices: Device[]
   );
 }
 
-function Screen({ link, emptyText }: { link?: DeviceLink; emptyText: string }) {
-  const src = link && buildEmbedUrl({ ...link, responsive: false });
+export function Screen({ link, emptyText, responsive = false }: { link?: DeviceLink; emptyText: string; responsive?: boolean }) {
+  const src = link && buildEmbedUrl({ ...link, responsive });
   const [loadedSrc, setLoadedSrc] = useState<string>();
   if (!src) {
     return (
@@ -61,7 +64,7 @@ function Screen({ link, emptyText }: { link?: DeviceLink; emptyText: string }) {
   );
 }
 
-function FlatDevice({ size, children }: { size: { w: number; h: number }; children: ReactNode }) {
+function FlatDevice({ size, children }: { size: Size; children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0);
   useEffect(() => {
@@ -84,8 +87,16 @@ function FlatDevice({ size, children }: { size: { w: number; h: number }; childr
 
 // Each device keeps its own iframe once opened; switching only hides, never remounts (spec 8.6).
 export function DeviceStage({
-  device, opened, links, resetSignal, emptyText,
-}: { device: Device; opened: Set<Device>; links: Partial<Record<Device, DeviceLink>>; resetSignal: number; emptyText: string }) {
+  device, opened, links, resetSignal, emptyText, responsiveDesktop = false, desktopSize = FLAT_SIZE.desktop,
+}: {
+  device: Device;
+  opened: Set<Device>;
+  links: Partial<Record<Device, DeviceLink>>;
+  resetSignal: number;
+  emptyText: string;
+  responsiveDesktop?: boolean;
+  desktopSize?: Size;
+}) {
   return (
     <>
       {opened.has("phone") && (
@@ -99,8 +110,8 @@ export function DeviceStage({
         (d) =>
           opened.has(d) && (
             <div key={d} hidden={device !== d} className="h-full px-6">
-              <FlatDevice size={FLAT_SIZE[d]}>
-                <Screen link={links[d]} emptyText={emptyText} />
+              <FlatDevice size={d === "desktop" ? desktopSize : FLAT_SIZE.tablet}>
+                <Screen link={links[d]} emptyText={emptyText} responsive={d === "desktop" && responsiveDesktop} />
               </FlatDevice>
             </div>
           ),
