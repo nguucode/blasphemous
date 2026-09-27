@@ -158,6 +158,8 @@ export function Phone3D({ children, resetSignal }: { children: ReactNode; resetS
       ({ phone, screen, screenRadius, body: size }) => {
         if (disposed) return;
         rotor.add(phone);
+        // Turn in from an angle on first show, like a product reveal.
+        if (!matchMedia("(prefers-reduced-motion: reduce)").matches) rotor.rotation.set(0.12, -0.9, 0);
         const w = screen.max.x - screen.min.x;
         const h = screen.max.y - screen.min.y;
         screenEl.style.height = `${Math.round((SCREEN_CSS_WIDTH * h) / w)}px`;
@@ -201,8 +203,8 @@ export function Phone3D({ children, resetSignal }: { children: ReactNode; resetS
     const tick = () => {
       frame = requestAnimationFrame(tick);
       if (!container.clientWidth) return; // hidden (another Device is showing)
-      rotor.rotation.x += (target.current.x - rotor.rotation.x) * 0.15;
-      rotor.rotation.y += (target.current.y - rotor.rotation.y) * 0.15;
+      rotor.rotation.x += (target.current.x - rotor.rotation.x) * 0.08;
+      rotor.rotation.y += (target.current.y - rotor.rotation.y) * 0.08;
       currentY.current = rotor.rotation.y;
       cssRotor.rotation.copy(rotor.rotation);
       gl.render(scene, camera);
@@ -236,7 +238,7 @@ export function Phone3D({ children, resetSignal }: { children: ReactNode; resetS
   return (
     <div ref={containerRef} className="relative h-full w-full cursor-grab touch-none select-none active:cursor-grabbing">
       {loaded !== true && (
-        <p className="pointer-events-none absolute inset-0 z-10 grid place-items-center text-sm text-white/70">
+        <p className="pointer-events-none absolute inset-0 z-10 grid place-items-center text-sm text-ink-secondary">
           {loaded === "error" ? "Không tải được mô hình điện thoại." : "Đang tải mô hình…"}
         </p>
       )}

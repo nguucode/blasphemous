@@ -22,6 +22,36 @@
   --color-accent-hover: var(--blue-10);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Stage: the dark product-showcase look (after apple.com product pages) used where a prototype is presented.
+     Raw values instead of Radix steps on purpose: the look depends on these exact neutrals and blue. */
+  --color-stage: #000;
+  --color-stage-raised: #1d1d1f;
+  --color-glass: rgb(42 42 45 / 0.72);
+  --color-glass-strong: rgb(22 22 23 / 0.8);
+  --color-ink: #f5f5f7;
+  --color-ink-secondary: #86868b; /* 5.7:1 on stage */
+  --color-cta: #0071e3; /* white text 4.6:1 */
+  --color-cta-hover: #0077ed;
+  --color-link: #2997ff;
+  --color-danger-on-stage: #ff9592; /* Radix red-dark 11 */
+  /* System font: SF Pro on Apple devices (not self-hosted, it is only licensed for Apple platforms), Geist elsewhere. */
+  --font-display: -apple-system, BlinkMacSystemFont, var(--font-geist-sans), "Helvetica Neue", sans-serif;
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-rise: rise 0.9s var(--ease-out-expo) both;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+  }
 }
 
 body {
