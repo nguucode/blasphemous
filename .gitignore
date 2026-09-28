@@ -45,3 +45,8 @@ next-env.d.ts
 .claude/.cc-writes/
 .claude/settings.local.json
 
+
+# Playwright
+/playwright-report/
+/test-results/
+/.next-e2e/

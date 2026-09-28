@@ -20,7 +20,7 @@ The Figma prototype is an ordinary `<iframe>` rendered by three.js's `CSS3DRende
 
 ## Stack
 
-Next.js 16 (App Router, TypeScript), React 19, Tailwind CSS v4, Supabase (Postgres and Auth), Drizzle ORM, three.js, Vitest and PGlite for tests.
+Next.js 16 (App Router, TypeScript), React 19, Tailwind CSS v4, Supabase (Postgres and Auth), Drizzle ORM, three.js. Tests: Vitest, Playwright, and PGlite as an in-memory Postgres.
 
 ## Getting started
 
@@ -52,10 +52,20 @@ The tables have Row Level Security on and no policies, so Supabase's public Data
 | `pnpm dev` | Development server |
 | `pnpm build` / `pnpm start` | Production build and server |
 | `pnpm test` | Unit and integration tests (the database tests run the real migration on PGlite, no Supabase needed) |
+| `pnpm e2e` | End-to-end tests in Chromium (see below) |
 | `pnpm typecheck` | TypeScript |
 | `pnpm lint` | ESLint |
 | `pnpm db:generate` | Generate a migration after editing `src/db/schema.ts` |
 | `pnpm db:migrate` | Apply migrations to the database in `DATABASE_URL` |
+
+## End-to-end tests
+
+`pnpm e2e` runs Playwright against a separate dev server on port 3100 and needs no Supabase project or `.env.local`:
+
+- The database is PGlite (Postgres in memory) with the real migrations, served on `127.0.0.1:5433` ([`e2e/test-db.mjs`](e2e/test-db.mjs)). It is empty on every run.
+- Sign-in is replaced by a test cookie, switched on by `E2E_FAKE_AUTH=1`. [`src/lib/e2e-guard.ts`](src/lib/e2e-guard.ts) ignores that switch in production builds and refuses any database that is not on localhost.
+
+The first run downloads Chromium (`npx playwright install chromium`).
 
 ## Routes
 

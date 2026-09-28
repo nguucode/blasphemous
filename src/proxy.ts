@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { fakeAuthEnabled } from "@/lib/e2e-guard";
 import { routeRequest } from "@/lib/host-routing";
 import { refreshSession } from "@/lib/supabase/proxy";
 
@@ -13,7 +14,8 @@ export async function proxy(request: NextRequest) {
     demoHost: process.env.DEMO_HOST,
   });
   if (route.type === "redirect") return NextResponse.redirect(route.url, 301);
-  return NEEDS_SESSION.test(request.nextUrl.pathname) ? refreshSession(request) : NextResponse.next();
+  // E2E runs without Supabase (fake sign-in cookie), so there is no session to refresh.
+  return NEEDS_SESSION.test(request.nextUrl.pathname) && !fakeAuthEnabled() ? refreshSession(request) : NextResponse.next();
 }
 
 // Skip Next internals and static files (models, favicon).

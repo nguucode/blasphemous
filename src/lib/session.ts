@@ -1,12 +1,23 @@
 import "server-only";
-import { headers } from "next/headers";
+import { sql } from "drizzle-orm";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { getDb } from "@/db";
 import type { Designer } from "@/db/repo";
+import { fakeAuthEnabled } from "./e2e-guard";
 import { createClient } from "./supabase/server";
+
+// E2E only (see e2e-guard.ts): the Designer is a uuid in this cookie instead of a Supabase session.
+const FAKE_COOKIE = "e2e_designer";
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // The current Designer, or null. While sign-in is on hold (2026-09-27) most Designers are anonymous
 // Supabase users: created on their first save, tied to this browser by the session cookie.
 export async function getDesigner(): Promise<Designer | null> {
+  if (fakeAuthEnabled()) {
+    const id = (await cookies()).get(FAKE_COOKIE)?.value;
+    return id && UUID.test(id) ? { id, email: "", isAnonymous: true } : null;
+  }
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   const claims = data?.claims;
@@ -19,6 +30,12 @@ export async function getDesigner(): Promise<Designer | null> {
 export async function getOrCreateDesigner(): Promise<Designer> {
   const existing = await getDesigner();
   if (existing) return existing;
+  if (fakeAuthEnabled()) {
+    const id = crypto.randomUUID();
+    await getDb().execute(sql`insert into auth.users (id) values (${id})`); // the test database's stand-in for Supabase Auth
+    (await cookies()).set(FAKE_COOKIE, id, { httpOnly: true, sameSite: "lax", path: "/" });
+    return { id, email: "", isAnonymous: true };
+  }
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInAnonymously();
   if (error || !data.user) throw new Error(`Anonymous sign-in failed: ${error?.message ?? "no user"}`);

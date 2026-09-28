@@ -1,6 +1,7 @@
 import "server-only";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
+import { assertLocalDatabase, fakeAuthEnabled } from "@/lib/e2e-guard";
 import type { Db } from "./repo";
 import * as schema from "./schema";
 
@@ -12,6 +13,9 @@ export function getDb(): Db {
   if (g.db) return g.db;
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error("Set DATABASE_URL in .env.local (Supabase → Connect → Transaction pooler)");
-  g.db = drizzle(postgres(url, { prepare: false, max: 5 }), { schema });
+  const e2e = fakeAuthEnabled();
+  if (e2e) assertLocalDatabase(url);
+  // E2E's in-memory Postgres (PGlite) is single-threaded: one connection keeps transactions from interleaving.
+  g.db = drizzle(postgres(url, { prepare: false, max: e2e ? 1 : 5 }), { schema });
   return g.db;
 }
