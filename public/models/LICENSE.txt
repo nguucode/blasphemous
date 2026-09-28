@@ -1,0 +1,9 @@
+iphone-17-pro-max.glb
+
+"iPhone 17 Pro Max" by Taufiq K (https://sketchfab.com/fqrhmn)
+Source: https://sketchfab.com/3d-models/iphone-17-pro-max-e7c5674931ae4b0ea1b4eaaabb159fdb
+License: CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)
+
+Changes: compressed (meshopt geometry, WebP textures at 512 px, screen texture removed).
+At runtime the app hides the front glass, repaints the Apple logo with the back panel
+material and draws a solid Dynamic Island. Credit must stay on every page that shows it.
