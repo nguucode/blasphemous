@@ -2,7 +2,9 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { preload } from "react-dom";
 import { buildEmbedUrl } from "@/lib/figma-link";
+import { PHONE_MODEL } from "@/lib/phone-model";
 
 // Shared by every page that presents a Demo: the device switcher and the stage that shows
 // the 3D phone or a flat Desktop/Tablet frame.
@@ -97,6 +99,9 @@ export function DeviceStage({
   responsiveDesktop?: boolean;
   desktopSize?: Size;
 }) {
+  // Put the model in the server HTML as a preload, so it downloads while the page's JavaScript loads.
+  // crossOrigin matches GLTFLoader's fetch, so the browser reuses this download instead of fetching twice.
+  if (opened.has("phone")) preload(PHONE_MODEL.url, { as: "fetch", crossOrigin: "anonymous" });
   return (
     <>
       {opened.has("phone") && (

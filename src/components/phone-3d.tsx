@@ -16,6 +16,14 @@ import { PHONE_MODEL } from "@/lib/phone-model";
 export const SCREEN_CSS_WIDTH = 393; // iPhone logical points; height follows the model's screen aspect
 const FOV = 30;
 const MAX_TILT_X = 0.6;
+// A 1.5× canvas looks the same on Retina and draws 44% fewer pixels than 2× (75% fewer than a 3× phone).
+// While the phone moves, 1× is enough (motion hides it); the resting frame is drawn sharp again.
+const MAX_PIXEL_RATIO = 1.5;
+const MOVING_PIXEL_RATIO = 1;
+// Easing toward the target angle, per second, so it settles in ~1.8 s on a fast or a slow machine alike.
+const EASE_PER_SECOND = 5;
+// Below this the phone counts as at rest and the render loop stops.
+const SETTLED = 1e-4;
 
 function roundedRect(w: number, h: number, r: number) {
   const s = new THREE.Shape();
@@ -101,6 +109,7 @@ export function Phone3D({ children, resetSignal }: { children: ReactNode; resetS
   const containerRef = useRef<HTMLDivElement>(null);
   const target = useRef({ x: 0, y: 0 });
   const currentY = useRef(0);
+  const wake = useRef(() => {}); // restarts the render loop; set by the main effect
   const [loaded, setLoaded] = useState<boolean | "error">(false);
   const [screenEl] = useState(() => {
     const el = document.createElement("div");
@@ -112,10 +121,13 @@ export function Phone3D({ children, resetSignal }: { children: ReactNode; resetS
     // Nearest full turn, so a phone spun several times comes back the short way.
     const turn = 2 * Math.PI;
     target.current = { x: 0, y: Math.round(currentY.current / turn) * turn };
+    wake.current();
   }, [resetSignal]);
 
   useEffect(() => {
     const container = containerRef.current!;
+    // Start the model download before the renderer and environment are built (they take a few hundred ms).
+    const phoneLoading = loadPhone();
     const scene = new THREE.Scene();
     const cssScene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(FOV, 1, 1, 2000);
@@ -126,7 +138,7 @@ export function Phone3D({ children, resetSignal }: { children: ReactNode; resetS
     let body = new THREE.Vector3(79, 163, 9);
 
     const gl = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    gl.setPixelRatio(Math.min(devicePixelRatio, 2));
+    gl.setPixelRatio(Math.min(devicePixelRatio, MAX_PIXEL_RATIO));
     gl.setClearColor(0x000000, 0);
     Object.assign(gl.domElement.style, { position: "absolute", inset: "0", pointerEvents: "none" });
     const css = new CSS3DRenderer();
@@ -146,15 +158,47 @@ export function Phone3D({ children, resetSignal }: { children: ReactNode; resetS
       const t = Math.tan(THREE.MathUtils.degToRad(FOV / 2));
       camera.position.z = Math.max((body.y * 1.12) / 2 / t, (body.x * 1.8) / 2 / (t * camera.aspect));
       camera.updateProjectionMatrix();
-      gl.setSize(w, h);
+      gl.setSize(w, h); // clears the canvas, so draw again
       css.setSize(w, h);
+      wake.current();
     };
     const ro = new ResizeObserver(resize);
     ro.observe(container);
     resize();
 
+    // Render only while something moves: dragging, or easing toward the target angle. At rest the
+    // WebGL canvas and the Figma iframe's CSS transform stay untouched, so an idle phone costs nothing.
+    let frame = 0;
+    let last = 0;
+    let drag: { x: number; y: number } | null = null;
+    const restRatio = Math.min(devicePixelRatio, MAX_PIXEL_RATIO);
+    const movingRatio = Math.min(restRatio, MOVING_PIXEL_RATIO);
+    const tick = (now: number) => {
+      frame = 0;
+      if (!container.clientWidth) return; // hidden (another Device is showing); resize wakes it when shown
+      const dt = last ? Math.min((now - last) / 1000, 0.1) : 1 / 60;
+      last = now;
+      const dx = target.current.x - rotor.rotation.x;
+      const dy = target.current.y - rotor.rotation.y;
+      const settled = !drag && Math.abs(dx) < SETTLED && Math.abs(dy) < SETTLED;
+      const k = 1 - Math.exp(-EASE_PER_SECOND * dt);
+      rotor.rotation.x = settled ? target.current.x : rotor.rotation.x + dx * k;
+      rotor.rotation.y = settled ? target.current.y : rotor.rotation.y + dy * k;
+      currentY.current = rotor.rotation.y;
+      cssRotor.rotation.copy(rotor.rotation);
+      const ratio = settled ? restRatio : movingRatio;
+      if (gl.getPixelRatio() !== ratio) gl.setPixelRatio(ratio);
+      gl.render(scene, camera);
+      css.render(cssScene, camera);
+      if (settled) last = 0;
+      else frame = requestAnimationFrame(tick);
+    };
+    wake.current = () => {
+      if (!frame) frame = requestAnimationFrame(tick);
+    };
+
     let disposed = false;
-    loadPhone().then(
+    phoneLoading.then(
       ({ phone, screen, screenRadius, body: size }) => {
         if (disposed) return;
         rotor.add(phone);
@@ -171,7 +215,7 @@ export function Phone3D({ children, resetSignal }: { children: ReactNode; resetS
         obj.position.copy(screen.getCenter(new THREE.Vector3()));
         cssRotor.add(obj);
         body = size;
-        resize();
+        resize(); // also wakes the loop for the turn-in
         setLoaded(true);
       },
       (err) => {
@@ -180,7 +224,6 @@ export function Phone3D({ children, resetSignal }: { children: ReactNode; resetS
       },
     );
 
-    let drag: { x: number; y: number } | null = null;
     const down = (e: PointerEvent) => {
       if (e.button !== 0) return;
       drag = { x: e.clientX, y: e.clientY };
@@ -192,6 +235,7 @@ export function Phone3D({ children, resetSignal }: { children: ReactNode; resetS
       target.current.y += (e.clientX - drag.x) * 0.008;
       target.current.x = THREE.MathUtils.clamp(target.current.x + (e.clientY - drag.y) * 0.008, -MAX_TILT_X, MAX_TILT_X);
       drag = { x: e.clientX, y: e.clientY };
+      wake.current();
     };
     // touch-action: pan-y lets a vertical swipe scroll the page (the browser then cancels the drag);
     // horizontal swipes still turn the phone.
@@ -201,22 +245,10 @@ export function Phone3D({ children, resetSignal }: { children: ReactNode; resetS
     container.addEventListener("pointerup", up);
     container.addEventListener("pointercancel", up);
 
-    let frame = 0;
-    const tick = () => {
-      frame = requestAnimationFrame(tick);
-      if (!container.clientWidth) return; // hidden (another Device is showing)
-      rotor.rotation.x += (target.current.x - rotor.rotation.x) * 0.08;
-      rotor.rotation.y += (target.current.y - rotor.rotation.y) * 0.08;
-      currentY.current = rotor.rotation.y;
-      cssRotor.rotation.copy(rotor.rotation);
-      gl.render(scene, camera);
-      css.render(cssScene, camera);
-    };
-    tick();
-
     return () => {
       disposed = true;
       cancelAnimationFrame(frame);
+      wake.current = () => {};
       ro.disconnect();
       container.removeEventListener("pointerdown", down);
       container.removeEventListener("pointermove", move);

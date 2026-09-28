@@ -1,6 +1,24 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "web", "runtimeExecutable": "npx", "runtimeArgs": ["-y", "pnpm@12.6.0", "dev"], "port": 3000 }
+    {
+      "name": "web",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "-y",
+        "pnpm@12.6.0",
+        "dev"
+      ],
+      "port": 3000
+    },
+    {
+      "name": "web-prod",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "npx pnpm@12.6.0 build && npx pnpm@12.6.0 start -p 3200"
+      ],
+      "port": 3200
+    }
   ]
 }
