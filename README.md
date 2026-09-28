@@ -1,5 +1,7 @@
 # Blasphemous
 
+[![CI](https://github.com/nguucode/blasphemous/actions/workflows/ci.yml/badge.svg)](https://github.com/nguucode/blasphemous/actions/workflows/ci.yml)
+
 Present Figma prototypes to clients with one link. Clients don't need a Figma account, switch between phone, tablet and desktop on the page, and see the phone flow inside a 3D iPhone they can rotate and still tap through.
 
 **[Live demo](https://ontheshore.biz/products/blasphemous/demo/)** · [Product page](https://ontheshore.biz/products/blasphemous/)
