@@ -57,6 +57,12 @@ export default function Home() {
       <footer className="relative mx-auto flex w-full max-w-[1400px] flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t border-white/10 px-4 py-5 text-xs text-ink-secondary md:px-8">
         <p>Not affiliated with Figma. Figma is a trademark of Figma, Inc.</p>
         <p className="flex flex-wrap items-center gap-x-5">
+          <Link href="/privacy" className="min-h-11 content-center hover:text-ink hover:underline">
+            Quyền riêng tư
+          </Link>
+          <Link href="/terms" className="min-h-11 content-center hover:text-ink hover:underline">
+            Điều khoản
+          </Link>
           <a href={SITE.makerUrl} className="min-h-11 content-center hover:text-ink hover:underline">
             Một sản phẩm của {SITE.maker}
           </a>

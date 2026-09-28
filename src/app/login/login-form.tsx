@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/browser";
 
@@ -101,8 +102,17 @@ export function LoginForm({ next, failed }: { next: string; failed: boolean }) {
         </p>
       )}
 
-      {/* ponytail: plain text until /terms and /privacy exist (launch checklist, spec 9). */}
-      <p className="text-xs leading-relaxed text-ink-secondary">Tiếp tục nghĩa là bạn đồng ý với Điều khoản và Chính sách quyền riêng tư.</p>
+      <p className="text-xs leading-relaxed text-ink-secondary">
+        Tiếp tục nghĩa là bạn đồng ý với{" "}
+        <Link href="/terms" className="text-link hover:underline">
+          Điều khoản
+        </Link>{" "}
+        và{" "}
+        <Link href="/privacy" className="text-link hover:underline">
+          Chính sách quyền riêng tư
+        </Link>
+        .
+      </p>
     </div>
   );
 }

@@ -244,6 +244,20 @@ export function DemoEditor({ demo, demoBase }: { demo?: EditorDemo; demoBase: st
           </div>
         )}
 
+        {isNew && (
+          <p className="text-xs leading-relaxed text-ink-secondary">
+            Tạo Demo nghĩa là bạn đồng ý với{" "}
+            <Link href="/terms" className="text-link hover:underline">
+              Điều khoản
+            </Link>{" "}
+            và{" "}
+            <Link href="/privacy" className="text-link hover:underline">
+              Quyền riêng tư
+            </Link>
+            .
+          </p>
+        )}
+
         {message && <p className="rounded-xl bg-danger-on-stage/10 px-4 py-3 text-[13px] text-danger-on-stage">{message}</p>}
 
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2 pt-1">
