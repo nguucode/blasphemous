@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getDesigner } from "@/lib/session";
+import { SITE } from "@/lib/site";
 import { signOut } from "./sign-out";
 
 export const metadata: Metadata = { title: "Demo của bạn · Blasphemous", robots: { index: false } };
@@ -14,6 +15,7 @@ export default async function AppLayout({ children }: LayoutProps<"/app">) {
         <Link href="/app" className="flex min-h-11 items-center gap-3">
           <span className="text-[21px] font-semibold tracking-[-0.02em]">Blasphemous</span>
           <span className="rounded-full border border-white/20 px-2 py-0.5 text-[11px] font-medium tracking-wide text-ink-secondary uppercase">Beta</span>
+          <span className="hidden text-[13px] text-ink-secondary sm:inline">by {SITE.maker}</span>
         </Link>
         {/* Sign-in is on hold; only a real account (none today) gets the email and Đăng xuất. */}
         {designer && !designer.isAnonymous ? (

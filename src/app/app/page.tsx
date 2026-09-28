@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { moreDemosMailto } from "@/lib/site";
 import { connection } from "next/server";
 import { getDb } from "@/db";
 import { deviceLinks, demoLimit, listDemos } from "@/db/repo";
@@ -49,7 +50,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/app">) {
       {full && (
         <p className="mt-4 text-[15px] text-ink-secondary">
           {designer.isAnonymous ? `Mỗi trình duyệt tạo được ${limit} Demo.` : `Beta giới hạn ${limit} Demo.`} Xóa một Demo để tạo mới.{" "}
-          <a href="mailto:hello@blasphemous.app?subject=C%E1%BA%A7n%20th%C3%AAm%20Demo" className="text-link hover:underline">
+          <a href={moreDemosMailto} className="text-link hover:underline">
             Cần thêm? Báo cho mình ›
           </a>
         </p>

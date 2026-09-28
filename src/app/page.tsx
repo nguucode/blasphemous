@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { SITE } from "@/lib/site";
 import { SampleDemo } from "./_home/sample-demo";
 
 export const metadata: Metadata = {
@@ -20,6 +21,9 @@ export default function Home() {
       <header className="relative mx-auto flex w-full max-w-[1400px] animate-rise items-center gap-3 px-4 py-4 md:px-8">
         <span className="text-[21px] font-semibold tracking-[-0.02em]">Blasphemous</span>
         <span className="rounded-full border border-white/20 px-2 py-0.5 text-[11px] font-medium tracking-wide text-ink-secondary uppercase">Beta</span>
+        <a href={SITE.makerUrl} className="ml-auto min-h-11 content-center text-[13px] text-ink-secondary hover:text-ink">
+          by {SITE.maker}
+        </a>
       </header>
 
       <main className="relative mx-auto grid w-full max-w-[1400px] flex-1 grid-cols-1 items-center gap-10 px-4 pb-8 md:px-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
@@ -52,9 +56,14 @@ export default function Home() {
 
       <footer className="relative mx-auto flex w-full max-w-[1400px] flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t border-white/10 px-4 py-5 text-xs text-ink-secondary md:px-8">
         <p>Not affiliated with Figma. Figma is a trademark of Figma, Inc.</p>
-        <a href="mailto:hello@blasphemous.app" className="min-h-11 content-center hover:text-ink hover:underline">
-          hello@blasphemous.app
-        </a>
+        <p className="flex flex-wrap items-center gap-x-5">
+          <a href={SITE.makerUrl} className="min-h-11 content-center hover:text-ink hover:underline">
+            Một sản phẩm của {SITE.maker}
+          </a>
+          <a href={`mailto:${SITE.contactEmail}`} className="min-h-11 content-center hover:text-ink hover:underline">
+            {SITE.contactEmail}
+          </a>
+        </p>
       </footer>
     </div>
   );

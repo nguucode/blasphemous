@@ -5,7 +5,7 @@ import { lookupDemo } from "@/lib/demos";
 import { isSlugFormat } from "@/lib/slug";
 import { Viewer } from "./viewer";
 
-// Viewer page, spec 8.6. Served at bls.to/<slug>; the proxy moves blasphemous.app/<slug> there.
+// Viewer page, spec 8.6: blasphemous.ontheshore.biz/<slug>. With a separate DEMO_HOST the proxy moves app-host slugs there.
 
 async function load(params: PageProps<"/[slug]">["params"]) {
   await connection();

@@ -47,6 +47,11 @@ describe("routeRequest (spec 6)", () => {
     }
   });
 
+  it("never redirects when the app and Demo Links share one host", () => {
+    const one = { appHost: "blasphemous.ontheshore.biz", demoHost: "blasphemous.ontheshore.biz", host: "blasphemous.ontheshore.biz" };
+    for (const pathname of ["/", "/try", "/app/new", "/acme-app"]) expect(routeRequest({ ...one, pathname })).toEqual({ type: "next" });
+  });
+
   it("ignores the port when matching hosts", () => {
     expect(routeRequest({ appHost: "app.localhost", demoHost: "demo.localhost", host: "demo.localhost:3000", pathname: "/" })).toEqual({
       type: "redirect",

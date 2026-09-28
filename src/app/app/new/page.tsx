@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { moreDemosMailto } from "@/lib/site";
 import { connection } from "next/server";
 import { getDb } from "@/db";
 import { demoLimit, listDemos } from "@/db/repo";
@@ -22,7 +23,7 @@ export default async function NewDemo() {
         </p>
         <p className="flex flex-wrap gap-x-6">
           <Link href="/app" className="min-h-11 content-center text-link hover:underline">Xem Demo của bạn ›</Link>
-          <a href="mailto:hello@blasphemous.app?subject=C%E1%BA%A7n%20th%C3%AAm%20Demo" className="min-h-11 content-center text-link hover:underline">
+          <a href={moreDemosMailto} className="min-h-11 content-center text-link hover:underline">
             Cần thêm? Báo cho mình ›
           </a>
         </p>
