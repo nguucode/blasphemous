@@ -1,16 +1,9 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { DEVICES, DeviceStage, DeviceSwitcher, type Device, type DeviceLink } from "@/components/device-view";
-import { parseFigmaLink, type FigmaLinkError } from "@/lib/figma-link";
-import { PHONE_MODEL } from "@/lib/phone-model";
-
-const ERRORS: Record<FigmaLinkError | "other-file", string> = {
-  "not-figma": "Đây không phải link prototype Figma.",
-  "design-link": "Đây là link thiết kế. Mở Present trong Figma rồi bấm Copy link.",
-  "no-node": "Link thiếu điểm bắt đầu. Trong Present, bấm Copy link lại.",
-  "other-file": "Link này thuộc file Figma khác với các Device đã nhập.",
-};
+import { DEVICES, DeviceStage, DeviceSwitcher, ModelCredit, type Device, type DeviceLink } from "@/components/device-view";
+import { LINK_ERRORS } from "@/lib/demo-rules";
+import { parseFigmaLink } from "@/lib/figma-link";
 
 export function Playground() {
   const [device, setDevice] = useState<Device>("phone");
@@ -29,9 +22,9 @@ export function Playground() {
   const importLink = (e: FormEvent) => {
     e.preventDefault();
     const parsed = parseFigmaLink(input);
-    if (!parsed.ok) return setError(ERRORS[parsed.error]);
+    if (!parsed.ok) return setError(LINK_ERRORS[parsed.error]);
     const other = Object.entries(links).find(([d, l]) => d !== device && l && l.fileKey !== parsed.fileKey);
-    if (other) return setError(ERRORS["other-file"]);
+    if (other) return setError(LINK_ERRORS["other-file"]);
     setLinks((l) => ({ ...l, [device]: { fileKey: parsed.fileKey, nodeId: parsed.nodeId } }));
     setError(undefined);
   };
@@ -87,9 +80,7 @@ export function Playground() {
           </div>
         )}
         <p className="pointer-events-auto mt-2 animate-rise text-xs text-ink-secondary [animation-delay:400ms]">
-          Mô hình “<a href={PHONE_MODEL.credit.url} target="_blank" rel="noopener" className="underline hover:text-ink">{PHONE_MODEL.credit.title}</a>” của{" "}
-          <a href={PHONE_MODEL.credit.authorUrl} target="_blank" rel="noopener" className="underline hover:text-ink">{PHONE_MODEL.credit.author}</a>,{" "}
-          <a href={PHONE_MODEL.credit.licenseUrl} target="_blank" rel="noopener" className="underline hover:text-ink">{PHONE_MODEL.credit.license}</a>
+          <ModelCredit />
         </p>
       </div>
 

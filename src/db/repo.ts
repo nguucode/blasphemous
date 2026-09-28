@@ -60,10 +60,6 @@ const isUniqueViolation = (e: unknown) => {
 };
 const owned = (owner: Designer, id: string) => and(eq(demos.id, id), eq(demos.ownerId, owner.id), isNull(demos.deletedAt));
 
-export function demoLimit(owner: Designer, limit: number, unlimitedEmails: string[]) {
-  return unlimitedEmails.some((e) => e.toLowerCase() === owner.email.toLowerCase()) ? Infinity : limit;
-}
-
 export const deviceLinks = (demo: DemoValue) =>
   Object.fromEntries(Object.entries(demo.nodeIds).map(([d, nodeId]) => [d, { fileKey: demo.fileKey, nodeId }])) as Partial<
     Record<Device, { fileKey: string; nodeId: string }>
@@ -100,7 +96,7 @@ export async function createDemo(
   db: Db,
   owner: Designer,
   input: DemoInput,
-  { limit, unlimitedEmails }: { limit: number; unlimitedEmails: string[] },
+  limit: number,
 ): Promise<{ ok: true; demo: DemoRecord } | { ok: false; error: "limit" | "slug-taken" }> {
   try {
     return await db.transaction(async (tx) => {
@@ -110,7 +106,7 @@ export async function createDemo(
         .select({ count: sql<number>`count(*)::int` })
         .from(demos)
         .where(and(eq(demos.ownerId, owner.id), isNull(demos.deletedAt)));
-      if (count >= demoLimit(owner, limit, unlimitedEmails)) return { ok: false, error: "limit" } as const;
+      if (count >= limit) return { ok: false, error: "limit" } as const;
       if (await isSlugTaken(tx, input.slug)) return { ok: false, error: "slug-taken" } as const;
       const [row] = await tx.insert(demos).values({ ...toColumns(input), ownerId: owner.id }).returning();
       return { ok: true, demo: toRecord(row) } as const;

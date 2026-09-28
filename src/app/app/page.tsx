@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { moreDemosMailto } from "@/lib/site";
 import { connection } from "next/server";
 import { getDb } from "@/db";
-import { deviceLinks, demoLimit, listDemos } from "@/db/repo";
-import { demoBase, limitFor, requireDesigner } from "@/lib/session";
+import { deviceLinks, listDemos } from "@/db/repo";
+import { FORM_DEVICES } from "@/lib/demo-rules";
+import { DEMO_LIMIT, demoBase, requireDesigner } from "@/lib/session";
+import { moreDemosMailto } from "@/lib/site";
 import { DemoLinkCell } from "./_components/copy-button";
 
 // Dashboard, spec 8.3.
@@ -15,9 +16,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/app">) {
   await connection();
   const designer = await requireDesigner();
   const demos = await listDemos(getDb(), designer);
-  const { limit: baseLimit, unlimitedEmails } = limitFor(designer);
-  const limit = demoLimit(designer, baseLimit, unlimitedEmails);
-  const full = demos.length >= limit;
+  const full = demos.length >= DEMO_LIMIT;
   const base = await demoBase();
   const { saved } = await searchParams;
 
@@ -28,11 +27,9 @@ export default async function Dashboard({ searchParams }: PageProps<"/app">) {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <h1 className="text-[40px] leading-tight font-semibold tracking-[-0.015em]">Demo của bạn</h1>
         <div className="flex flex-wrap items-center gap-4">
-          {Number.isFinite(limit) && (
-            <span className="text-[15px] text-ink-secondary">
-              {demos.length}/{limit} Demo
-            </span>
-          )}
+          <span className="text-[15px] text-ink-secondary">
+            {demos.length}/{DEMO_LIMIT} Demo
+          </span>
           {full ? (
             <span aria-disabled className={`${cta} cursor-not-allowed opacity-40`}>
               + Tạo Demo
@@ -49,7 +46,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/app">) {
 
       {full && (
         <p className="mt-4 text-[15px] text-ink-secondary">
-          {designer.isAnonymous ? `Mỗi trình duyệt tạo được ${limit} Demo.` : `Beta giới hạn ${limit} Demo.`} Xóa một Demo để tạo mới.{" "}
+          Mỗi trình duyệt tạo được {DEMO_LIMIT} Demo. Xóa một Demo để tạo mới.{" "}
           <a href={moreDemosMailto} className="text-link hover:underline">
             Cần thêm? Báo cho mình ›
           </a>
@@ -88,7 +85,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/app">) {
                     <DemoLinkCell demoBase={base} slug={d.slug} />
                   </td>
                   <td className="px-6 py-3 text-ink-secondary">
-                    {(["phone", "tablet", "desktop"] as const).filter((x) => deviceLinks(d)[x]).map((x) => DEVICE_LABEL[x]).join(" · ")}
+                    {FORM_DEVICES.filter((x) => deviceLinks(d)[x]).map((x) => DEVICE_LABEL[x]).join(" · ")}
                   </td>
                   <td className="px-6 py-3">
                     <span className={d.isPublished ? "text-[#30d158]" : "text-ink-secondary"}>{d.isPublished ? "Công khai" : "Đang ẩn"}</span>

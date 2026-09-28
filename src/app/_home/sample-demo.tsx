@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { DeviceStage, DeviceSwitcher, type Device } from "@/components/device-view";
-import { PHONE_MODEL } from "@/lib/phone-model";
+import { DeviceStage, DeviceSwitcher, ModelCredit, type Device } from "@/components/device-view";
 
 // Homepage sample Demo (spec 8.1). ponytail: "Live Chat" stands in until the showcase file with
 // real phone, tablet and desktop flows exists; the same desktop flow is shown on both devices.
@@ -48,9 +47,7 @@ export function SampleDemo() {
         )}
         {device === "phone" && (
           <span>
-            Mô hình “<a href={PHONE_MODEL.credit.url} target="_blank" rel="noopener" className="underline hover:text-ink">{PHONE_MODEL.credit.title}</a>” của{" "}
-            <a href={PHONE_MODEL.credit.authorUrl} target="_blank" rel="noopener" className="underline hover:text-ink">{PHONE_MODEL.credit.author}</a>,{" "}
-            <a href={PHONE_MODEL.credit.licenseUrl} target="_blank" rel="noopener" className="underline hover:text-ink">{PHONE_MODEL.credit.license}</a>
+            <ModelCredit />
           </span>
         )}
       </div>

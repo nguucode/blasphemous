@@ -24,6 +24,19 @@ export type Size = { w: number; h: number };
 export const DESKTOP_SIZES: Size[] = [{ w: 1280, h: 800 }, { w: 1440, h: 900 }, { w: 1920, h: 1080 }];
 const FLAT_SIZE = { desktop: DESKTOP_SIZES[1], tablet: { w: 834, h: 1194 } };
 
+// CC BY 4.0 requires this credit on every page that shows the phone model. Callers choose the wrapper.
+export function ModelCredit() {
+  const c = PHONE_MODEL.credit;
+  const link = "underline hover:text-ink";
+  return (
+    <>
+      Mô hình “<a href={c.url} target="_blank" rel="noopener" className={link}>{c.title}</a>” của{" "}
+      <a href={c.authorUrl} target="_blank" rel="noopener" className={link}>{c.author}</a>,{" "}
+      <a href={c.licenseUrl} target="_blank" rel="noopener" className={link}>{c.license}</a>
+    </>
+  );
+}
+
 export function DeviceSwitcher({ devices, value, onChange }: { devices: Device[]; value: Device; onChange: (d: Device) => void }) {
   return (
     <div
