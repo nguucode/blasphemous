@@ -9,9 +9,12 @@ export default defineConfig({
   testDir: "e2e",
   fullyParallel: false,
   workers: 1, // one shared in-memory database
-  retries: process.env.CI ? 1 : 0,
-  timeout: 60_000,
-  expect: { timeout: 15_000 },
+  // No retries: the in-memory database lives for the whole run, so a retry would find the first
+  // attempt's Demo (slug already taken) and fail for the wrong reason.
+  retries: 0,
+  // CI machines compile each route on first visit and render the 3D phone in software WebGL.
+  timeout: process.env.CI ? 180_000 : 60_000,
+  expect: { timeout: process.env.CI ? 30_000 : 15_000 },
   reporter: [["list"], ["html", { open: "never" }]],
   use: {
     baseURL: `http://localhost:${PORT}`,
