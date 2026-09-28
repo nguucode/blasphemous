@@ -18,7 +18,7 @@ const input = (slug: string, over: Partial<DemoInput> = {}): DemoInput => ({
   responsiveDesktop: false,
   ...over,
 });
-const opts = { limit: 3, unlimitedEmails: [] as string[] };
+const LIMIT = 3;
 
 const client = new PGlite();
 const db = drizzle(client, { schema });
@@ -35,7 +35,7 @@ beforeEach(async () => {
 });
 
 async function created(owner: Designer, slug: string, over: Partial<DemoInput> = {}) {
-  const r = await createDemo(db, owner, input(slug, over), opts);
+  const r = await createDemo(db, owner, input(slug, over), LIMIT);
   if (!r.ok) throw new Error(r.error);
   return r.demo;
 }
@@ -50,7 +50,7 @@ describe("createDemo", () => {
 
   it("rejects a slug someone already has", async () => {
     await created(ME, "acme");
-    expect(await createDemo(db, OTHER, input("acme"), opts)).toEqual({ ok: false, error: "slug-taken" });
+    expect(await createDemo(db, OTHER, input("acme"), LIMIT)).toEqual({ ok: false, error: "slug-taken" });
   });
 
   it("enforces the Beta limit, counting hidden Demos but not deleted ones (spec 7.4)", async () => {
@@ -58,20 +58,15 @@ describe("createDemo", () => {
     const b = await created(ME, "a-2");
     await created(ME, "a-3");
     await setPublished(db, ME, a.id, false);
-    expect(await createDemo(db, ME, input("a-4"), opts)).toEqual({ ok: false, error: "limit" });
+    expect(await createDemo(db, ME, input("a-4"), LIMIT)).toEqual({ ok: false, error: "limit" });
     await deleteDemo(db, ME, b.id);
-    expect((await createDemo(db, ME, input("a-4"), opts)).ok).toBe(true);
-  });
-
-  it("lets UNLIMITED_EMAILS past the limit, case-insensitively", async () => {
-    for (const s of ["a-1", "a-2", "a-3"]) await created(ME, s);
-    expect((await createDemo(db, ME, input("a-4"), { ...opts, unlimitedEmails: ["ME@studio.vn"] })).ok).toBe(true);
+    expect((await createDemo(db, ME, input("a-4"), LIMIT)).ok).toBe(true);
   });
 
   it("does not let concurrent creates slip past the limit", async () => {
     await created(ME, "a-1");
     await created(ME, "a-2");
-    const results = await Promise.all(["b-1", "b-2", "b-3"].map((s) => createDemo(db, ME, input(s), opts)));
+    const results = await Promise.all(["b-1", "b-2", "b-3"].map((s) => createDemo(db, ME, input(s), LIMIT)));
     expect(results.filter((r) => r.ok)).toHaveLength(1);
   });
 });
@@ -93,7 +88,7 @@ describe("slugs are never reissued (spec 7.3)", () => {
     expect((await updateDemo(db, ME, d.id, input("acme-v2"))).ok).toBe(true);
     expect(await resolveSlug(db, "acme")).toEqual({ redirectTo: "acme-v2" });
     expect(await resolveSlug(db, "acme-v2")).toMatchObject({ demo: { slug: "acme-v2" } });
-    expect(await createDemo(db, OTHER, input("acme"), opts)).toEqual({ ok: false, error: "slug-taken" });
+    expect(await createDemo(db, OTHER, input("acme"), LIMIT)).toEqual({ ok: false, error: "slug-taken" });
   });
 
   it("lets a Demo take back its own old slug", async () => {
@@ -140,6 +135,6 @@ describe("ownership (spec 7.5)", () => {
 
 describe("schema", () => {
   it("refuses a Demo with no Device at all", async () => {
-    await expect(createDemo(db, ME, input("acme", { nodeIds: {} }), opts)).rejects.toThrow();
+    await expect(createDemo(db, ME, input("acme", { nodeIds: {} }), LIMIT)).rejects.toThrow();
   });
 });

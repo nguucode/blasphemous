@@ -1,12 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { DESKTOP_SIZES, DEVICES, DeviceStage, DeviceSwitcher, Screen, type Device } from "@/components/device-view";
+import { DESKTOP_SIZES, DEVICES, DeviceStage, DeviceSwitcher, ModelCredit, Screen, type Device } from "@/components/device-view";
+import { FORM_DEVICES } from "@/lib/demo-rules";
 import type { PublishedDemo } from "@/lib/demos";
-import { PHONE_MODEL } from "@/lib/phone-model";
 
-// Designer's order in the form is Phone, Tablet, Desktop; the Viewer opens on the first one assigned.
-const OPEN_ORDER: Device[] = ["phone", "tablet", "desktop"];
 const SMALL_SCREEN = "(max-width: 640px)";
 
 function useSmallScreen() {
@@ -22,7 +20,8 @@ function useSmallScreen() {
 }
 
 export function Viewer({ demo }: { demo: PublishedDemo }) {
-  const devices = OPEN_ORDER.filter((d) => demo.links[d]);
+  // Opens on the first Device in the Designer's form order (Phone, Tablet, Desktop).
+  const devices = FORM_DEVICES.filter((d) => demo.links[d]);
   const [device, setDevice] = useState<Device>(devices[0]);
   const [opened, setOpened] = useState<Set<Device>>(new Set([devices[0]]));
   const [resetSignal, setResetSignal] = useState(0);
@@ -105,9 +104,7 @@ export function Viewer({ demo }: { demo: PublishedDemo }) {
                 Đưa về thẳng ›
               </button>
               <span>
-                Mô hình “<a href={PHONE_MODEL.credit.url} target="_blank" rel="noopener" className="underline hover:text-ink">{PHONE_MODEL.credit.title}</a>” của{" "}
-                <a href={PHONE_MODEL.credit.authorUrl} target="_blank" rel="noopener" className="underline hover:text-ink">{PHONE_MODEL.credit.author}</a>,{" "}
-                <a href={PHONE_MODEL.credit.licenseUrl} target="_blank" rel="noopener" className="underline hover:text-ink">{PHONE_MODEL.credit.license}</a>
+                <ModelCredit />
               </span>
             </>
           )}

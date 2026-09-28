@@ -88,8 +88,8 @@ src/
   app/                 routes (see above), server actions in app/app/actions.ts
   components/          phone-3d.tsx (3D iPhone), device-view.tsx (device switcher and stage)
   db/                  schema.ts, repo.ts (data rules) and their tests
-  lib/                 figma-link.ts, demo-rules.ts, slug.ts, host-routing.ts, session.ts, supabase/
-  proxy.ts             host routing and Supabase session refresh
+  lib/                 figma-link.ts, demo-rules.ts, slug.ts, session.ts, supabase/
+  proxy.ts             Supabase session refresh
 drizzle/               SQL migrations
 public/models/         the iPhone model
 ```

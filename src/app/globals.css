@@ -1,30 +1,11 @@
 @import "tailwindcss";
-@import "@radix-ui/colors/gray.css";
-@import "@radix-ui/colors/gray-dark.css";
-@import "@radix-ui/colors/blue.css";
-@import "@radix-ui/colors/blue-dark.css";
-@import "@radix-ui/colors/red.css";
-@import "@radix-ui/colors/red-dark.css";
 
 @theme {
-  --color-surface: var(--gray-1);
-  --color-surface-subtle: var(--gray-2);
-  --color-ui: var(--gray-3);
-  --color-ui-hover: var(--gray-4);
-  --color-ui-active: var(--gray-5);
-  --color-border: var(--gray-6);
-  --color-border-input: var(--gray-7);
-  --color-ring: var(--blue-8);
-  --color-text: var(--gray-12);
-  --color-text-muted: var(--gray-11);
-  --color-text-danger: var(--red-11);
-  --color-accent: var(--blue-9);
-  --color-accent-hover: var(--blue-10);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 
   /* Stage: the dark product-showcase look (after apple.com product pages) used where a prototype is presented.
-     Raw values instead of Radix steps on purpose: the look depends on these exact neutrals and blue. */
+     Raw values on purpose: the look depends on these exact neutrals and blue. */
   --color-stage: #000;
   --color-stage-raised: #1d1d1f;
   --color-glass: rgb(42 42 45 / 0.72);
@@ -55,6 +36,6 @@
 }
 
 body {
-  background: var(--color-surface);
-  color: var(--color-text);
+  background: var(--color-stage);
+  color: var(--color-ink);
 }

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { validateDemoForm, type DemoForm, type FormErrors } from "@/lib/demo-rules";
 import { getDb } from "@/db";
 import { createDemo, deleteDemo, isSlugTaken, setPublished, updateDemo } from "@/db/repo";
-import { getDesigner, getOrCreateDesigner, limitFor } from "@/lib/session";
+import { DEMO_LIMIT, getDesigner, getOrCreateDesigner } from "@/lib/session";
 
 // Every action checks the Designer and re-validates input: actions are reachable by direct POST (spec 7.5).
 
@@ -47,11 +47,10 @@ export async function saveDemo(form: DemoForm, id?: string): Promise<SaveResult>
   const db = getDb();
 
   if (!id) {
-    const limits = limitFor(designer);
-    const r = await createDemo(db, designer, checked.value, limits);
+    const r = await createDemo(db, designer, checked.value, DEMO_LIMIT);
     if (!r.ok) {
       return r.error === "limit"
-        ? { ok: false, errors: {}, message: `Mỗi trình duyệt tạo được ${limits.limit} Demo. Xóa Demo hiện có để tạo mới.` }
+        ? { ok: false, errors: {}, message: `Mỗi trình duyệt tạo được ${DEMO_LIMIT} Demo. Xóa Demo hiện có để tạo mới.` }
         : { ok: false, errors: { slug: "Đường dẫn này đã có người dùng." } };
     }
     revalidatePath("/app");

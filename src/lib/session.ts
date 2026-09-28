@@ -50,15 +50,9 @@ export async function requireDesigner(): Promise<Designer> {
   return designer;
 }
 
-export const DEMO_LIMIT = Number(process.env.DEMO_LIMIT ?? 3);
-export const UNLIMITED_EMAILS = (process.env.UNLIMITED_EMAILS ?? "").split(",").map((e) => e.trim()).filter(Boolean);
-// Without an account a browser gets one Demo.
-export const ANONYMOUS_DEMO_LIMIT = 1;
-
-export const limitFor = (designer: Designer | null) =>
-  !designer || designer.isAnonymous
-    ? { limit: ANONYMOUS_DEMO_LIMIT, unlimitedEmails: [] }
-    : { limit: DEMO_LIMIT, unlimitedEmails: UNLIMITED_EMAILS };
+// Sign-in is on hold, so every Designer is a browser, and a browser gets one Demo.
+// Per-account limits (spec 7.4) come back with sign-in.
+export const DEMO_LIMIT = 1;
 
 // Where Demo Links live: the demo host in production, this server in local dev.
 export async function demoBase() {
