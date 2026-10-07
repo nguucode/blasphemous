@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildEmbedUrl, parseFigmaLink } from "./figma-link";
+import { buildEmbedUrl, figmaAccess, parseFigmaLink } from "./figma-link";
 
 const PROTO =
   "https://www.figma.com/proto/k0piuu0Zxvnmz3rpCaGLfa/Live-Chat?node-id=3-10&starting-point-node-id=3%3A10&page-id=2%3A2";
@@ -65,4 +65,15 @@ describe("buildEmbedUrl", () => {
     const url = new URL(buildEmbedUrl({ fileKey: "KEY", nodeId: "1:2", clientId: "abc" }));
     expect(url.searchParams.get("client-id")).toBe("abc");
   });
+});
+
+describe("figmaAccess", () => {
+  // Figma's oEmbed answers as a stranger would: a file not shared with "Anyone with the link" looks missing.
+  it.each([
+    [200, "public"],
+    [404, "private"],
+    [403, "private"],
+    [429, "unknown"],
+    [500, "unknown"],
+  ] as const)("reads oEmbed status %i as %s", (status, access) => expect(figmaAccess(status)).toBe(access));
 });

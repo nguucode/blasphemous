@@ -16,6 +16,7 @@
   --color-cta-hover: #0077ed;
   --color-link: #2997ff;
   --color-danger-on-stage: #ff9592; /* Radix red-dark 11 */
+  --color-warning-on-stage: #ff9f0a; /* apple.com dark orange; tint only, text stays ink */
   /* System font: SF Pro on Apple devices (not self-hosted, it is only licensed for Apple platforms), Geist elsewhere. */
   --font-display: -apple-system, BlinkMacSystemFont, var(--font-geist-sans), "Helvetica Neue", sans-serif;
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);

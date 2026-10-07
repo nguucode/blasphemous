@@ -12,7 +12,7 @@ import { displayUrl } from "@/lib/demo-url";
 import { DEFAULT_MODEL, DEVICE_OPTIONS, DEVICES, type Device, type Flow } from "@/lib/devices";
 import { parseFigmaLink } from "@/lib/figma-link";
 import { isReservedSlug, isSlugFormat } from "@/lib/slug";
-import { fetchFigmaFlows, isSlugAvailable, publishDemo, removeDemo, saveDemo } from "../actions";
+import { checkFigmaAccess, fetchFigmaFlows, isSlugAvailable, publishDemo, removeDemo, saveDemo } from "../actions";
 
 // Create and edit screen (spec 12): the Viewer's own layout, plus a Brand config popover on the logo,
 // a Demo settings popover top right, and a column to turn Devices on, pick the device and paste links.
@@ -101,6 +101,18 @@ export function DemoEditor({ demo, demoBase }: { demo?: EditorDemo; demoBase: st
     return out;
   }, [form.devices]);
   const fileKey = Object.values(links)[0]?.fileKey;
+
+  // Warn while editing when Figma would show clients its sign-in wall instead of the prototype.
+  const [privateKey, setPrivateKey] = useState<string>();
+  useEffect(() => {
+    if (!fileKey) return;
+    let current = true; // a late answer for an earlier file is dropped
+    const t = setTimeout(() => checkFigmaAccess(fileKey).then((a) => current && setPrivateKey(a === "private" ? fileKey : undefined)), 350);
+    return () => {
+      current = false;
+      clearTimeout(t);
+    };
+  }, [fileKey]);
   const enabled = DEVICES.map((d) => d.id).filter((d) => form.devices[d].enabled);
   const player = useDemoPlayer({ enabled, flows: form.flows });
   const brand: Brand = brandDraft ?? form;
@@ -350,6 +362,7 @@ export function DemoEditor({ demo, demoBase }: { demo?: EditorDemo; demoBase: st
         );
       })}
       {shown("links") && <p className="text-xs text-danger-on-stage">{shown("links")}</p>}
+      {fileKey && privateKey === fileKey && <PrivateFileWarning />}
       <p className="-mt-2 text-xs leading-relaxed text-ink-secondary">
         Link lấy từ Present, Copy link trong Figma. Mọi link phải cùng một file. Mỗi thiết bị một page, hay chung một page, đều được.
       </p>
@@ -659,5 +672,24 @@ function Switch({ checked, onChange }: { checked: boolean; onChange: (v: boolean
     >
       <span className={`absolute top-[2px] left-[2px] size-[27px] rounded-full bg-white shadow transition-transform duration-300 ${checked ? "translate-x-5" : ""}`} />
     </button>
+  );
+}
+
+function PrivateFileWarning() {
+  return (
+    <div role="alert" className="flex flex-col gap-2 rounded-2xl bg-warning-on-stage/12 p-3 text-xs leading-relaxed text-ink">
+      <p>
+        <strong className="font-semibold">Khách chưa xem được file này.</strong> Figma đang chặn người ngoài, nên khách sẽ thấy màn hình bắt đăng
+        nhập Figma. Trong Figma, bấm Share và chọn <span className="whitespace-nowrap">“Anyone with the link · can view”</span>.
+      </p>
+      <details>
+        <summary className="cursor-pointer text-link">Org dùng Figma Enterprise và không đổi được?</summary>
+        <p className="mt-2 text-ink-secondary">
+          Admin của org có thể đã tắt link công khai hoặc bắt buộc mật khẩu, và Figma không cho nhúng file như vậy. Có hai cách: nhờ admin
+          mở ngoại lệ cho project dùng để trình bày khách, hoặc mời email của khách vào file trong Figma. Với cách thứ hai, khách phải đăng nhập
+          Figma mới xem được.
+        </p>
+      </details>
+    </div>
   );
 }

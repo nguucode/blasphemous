@@ -114,6 +114,14 @@ Build from an APFS or HFS+ disk. On exFAT and other non-Apple drives macOS write
 
 Any other Node host that runs Next.js also works: set the same variables as `.env.local`, plus `DEMO_HOST`.
 
+### Backups
+
+[`.github/workflows/backup.yml`](.github/workflows/backup.yml) runs daily: it requests a Viewer page so a Supabase Free project never pauses, dumps the database encrypted with [age](https://github.com/FiloSottile/age) as a 30-day artifact, and fails when the database passes 350 MB. It needs the secret `BACKUP_DATABASE_URL` (Session pooler, port 5432) and the variable `BACKUP_AGE_RECIPIENT` (the public key from `age-keygen`). To restore:
+
+```bash
+age -d -i key.txt backup.sql.gz.age | gunzip | psql "$DATABASE_URL"
+```
+
 ## License
 
 Code: [MIT](LICENSE).

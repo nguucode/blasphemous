@@ -1,0 +1,61 @@
+name: Database backup
+
+# Daily, for a Supabase Free project:
+# - keeps it awake (Free projects pause after a week without database activity),
+# - backs up the database, encrypted, because Free has no backups of its own,
+# - fails, so GitHub emails the owner, when the database nears the 500 MB cap.
+# Needs the secret BACKUP_DATABASE_URL (Supabase → Connect → Session pooler, port 5432; GitHub runners
+# have no IPv6 for the direct connection) and the variable BACKUP_AGE_RECIPIENT (an age public key).
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  keepalive:
+    if: github.repository == 'nguucode/blasphemous'
+    runs-on: ubuntu-latest
+    steps:
+      # Every Viewer request reads the database, even for a slug nobody has (404).
+      - run: curl -s -o /dev/null -w "%{http_code}\n" https://blasphemous.ontheshore.biz/keepalive
+
+  backup:
+    if: github.repository == 'nguucode/blasphemous'
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+      AGE_RECIPIENT: ${{ vars.BACKUP_AGE_RECIPIENT }}
+    steps:
+      - name: Install the Postgres 17 client and age
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSo /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client-17 age
+
+      # The repo is public, so are its artifacts: only the encrypted file leaves this job.
+      # auth holds the accounts (Supabase Auth), drizzle the migration history.
+      - name: Dump and encrypt
+        shell: bash
+        run: |
+          /usr/lib/postgresql/17/bin/pg_dump "$DATABASE_URL" --schema=public --schema=auth --schema=drizzle --no-owner --no-privileges \
+            | gzip | age -r "$AGE_RECIPIENT" > backup.sql.gz.age
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: db-${{ github.run_id }}
+          path: backup.sql.gz.age
+          retention-days: 30
+
+      - name: Check the database size
+        run: |
+          bytes=$(/usr/lib/postgresql/17/bin/psql "$DATABASE_URL" -tAc "select pg_database_size(current_database())")
+          echo "Database: $((bytes / 1048576)) MB of the Free plan's 500 MB"
+          if [ "$bytes" -gt $((350 * 1048576)) ]; then
+            echo "::error::Database over 350 MB: move brand images out of Postgres (R2) or upgrade Supabase"
+            exit 1
+          fi
