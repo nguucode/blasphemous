@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
-import { boolean, check, index, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { boolean, check, index, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { authUsers } from "drizzle-orm/supabase";
+import { DEFAULT_DEVICES, type DeviceSettings, type Flow } from "@/lib/devices";
 
 // Spec 7.1. RLS is on with no policies: Supabase's Data API (publishable key) sees nothing,
 // while the server connects as the table owner and does its own checks (spec 7.5).
@@ -19,8 +20,14 @@ export const demos = pgTable(
     phoneNodeId: text("phone_node_id"),
     tabletNodeId: text("tablet_node_id"),
     desktopNodeId: text("desktop_node_id"),
-    responsiveDesktop: boolean("responsive_desktop").notNull().default(false),
+    // Which Devices show as tabs and what each is drawn as; a turned-off Device keeps its node (spec 12).
+    devices: jsonb("devices").$type<DeviceSettings>().notNull().default(DEFAULT_DEVICES),
+    flows: jsonb("flows").$type<Flow[]>().notNull().default([]),
+    brandColor: text("brand_color").notNull().default("#0071e3"),
     backgroundColor: text("background_color").notNull().default("#1e1b4b"),
+    // Brand images as data URLs, a few hundred KB at most (spec 12); served by /api/media.
+    backgroundImage: text("background_image"),
+    logo: text("logo"),
     isPublished: boolean("is_published").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

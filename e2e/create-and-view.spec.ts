@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { DESKTOP_LINK, FILE_KEY, PHONE_LINK } from "./helpers";
+import { DESKTOP_FIELD, DESKTOP_LINK, FILE_KEY, PHONE_FIELD, PHONE_LINK, fillSettings } from "./helpers";
 
 // Spec §10: a Designer creates a Demo, copies the link, a client opens it and switches Device.
 test("a visitor creates a Demo, copies the link, and a client views it on both devices", async ({ page, context, browser, baseURL }) => {
@@ -10,14 +10,19 @@ test("a visitor creates a Demo, copies the link, and a client views it on both d
   await expect(page).toHaveURL(/\/app\/new$/);
 
   // The slug follows the name, Vietnamese diacritics removed, until edited by hand.
+  await page.getByRole("button", { name: "Cài đặt Demo" }).click();
   await page.getByLabel("Tên Demo").fill("Ứng dụng Đặt Lịch");
   await expect(page.getByLabel("Demo Link")).toHaveValue("ung-dung-dat-lich");
-
-  await page.getByLabel("Phone", { exact: true }).fill(PHONE_LINK);
-  await page.getByLabel("Desktop", { exact: true }).fill(DESKTOP_LINK);
-  await expect(page.getByText("✓ Nhận flow 3:10")).toBeVisible();
-  await expect(page.getByText("✓ Nhận flow 5:1")).toBeVisible();
   await page.getByLabel(/Anyone with the link can view/).check();
+  await page.getByRole("button", { name: "Xong" }).click();
+
+  // Mobile is on by default; Desktop is turned on, which adds its tab.
+  await page.getByLabel(PHONE_FIELD).fill(PHONE_LINK);
+  await page.getByRole("checkbox", { name: "Desktop" }).check();
+  await page.getByLabel(DESKTOP_FIELD).fill(DESKTOP_LINK);
+  await expect(page.getByText("✓ Bắt đầu ở frame 3:10")).toBeVisible();
+  await expect(page.getByText("✓ Bắt đầu ở frame 5:1")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Desktop", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Tạo Demo", exact: true }).click();
 
   // Success screen: the link, and Copy puts the full URL on the clipboard.
@@ -45,16 +50,56 @@ test("a visitor creates a Demo, copies the link, and a client views it on both d
   await expect(viewer.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
   await expect(viewer.getByRole("heading", { name: "Ứng dụng Đặt Lịch" })).toBeVisible();
 
-  // Opens on the phone (3D iPhone), with the phone flow embedded.
-  await expect(viewer.getByRole("button", { name: "Mobile" })).toHaveAttribute("aria-pressed", "true");
-  await expect(viewer.locator(`iframe[src*="embed.figma.com/proto/${FILE_KEY}"][src*="node-id=3-10"]`)).toBeAttached();
-  // Switching to Desktop loads the desktop flow.
-  await viewer.getByRole("button", { name: "Desktop" }).click();
+  // A desktop-sized screen opens on Desktop, with the desktop flow embedded.
   await expect(viewer.getByRole("button", { name: "Desktop" })).toHaveAttribute("aria-pressed", "true");
-  await expect(viewer.locator(`iframe[src*="node-id=5-1"]`)).toBeVisible();
+  await expect(viewer.locator(`iframe[src*="embed.figma.com/proto/${FILE_KEY}"][src*="node-id=5-1"]`)).toBeVisible();
+  // Switching to Mobile loads the phone flow in the 3D iPhone.
+  await viewer.getByRole("button", { name: "Mobile" }).click();
+  await expect(viewer.getByRole("button", { name: "Mobile" })).toHaveAttribute("aria-pressed", "true");
+  await expect(viewer.locator(`iframe[src*="node-id=3-10"]`)).toBeAttached();
+  // No flows yet: no Flow list, no W/S.
+  await expect(viewer.getByRole("region", { name: "Flow list" })).toHaveCount(0);
 
   // The client cannot open the Designer's edit page.
   await viewer.goto(`/app/demos/${demoId}`);
   await expect(viewer).toHaveURL(/\/app\/new$/);
+  await client.close();
+});
+
+// Spec 12: flows added by link show in the Viewer's Flow list, filtered by Device, and W/S move between them.
+test("flows and brand colour reach the Viewer, and W/S switch flows", async ({ page, browser, baseURL }) => {
+  await page.goto("/app/new");
+  await fillSettings(page, { name: "Flow Demo", slug: "flow-demo" });
+  await page.getByLabel(PHONE_FIELD).fill(PHONE_LINK);
+  await page.getByRole("button", { name: /Thêm flow bằng link cho Mobile/ }).click();
+  await page.getByLabel("Tên flow").fill("Đặt lịch");
+  await page.getByLabel("Link flow").fill(`https://www.figma.com/proto/${FILE_KEY}/X?node-id=7-7`);
+  await page.getByRole("button", { name: "Thêm", exact: true }).click();
+  await page.getByRole("button", { name: /Thêm flow bằng link cho Mobile/ }).click();
+  await page.getByLabel("Tên flow").fill("Thanh toán");
+  await page.getByLabel("Link flow").fill(`https://www.figma.com/proto/${FILE_KEY}/X?node-id=8-8`);
+  await page.getByLabel("Link flow").press("Enter"); // adds the flow, does not submit the Demo
+  await expect(page.getByRole("button", { name: "Thanh toán", exact: true })).toBeVisible();
+
+  // Brand colour, applied only on Save in the popover.
+  await page.getByRole("button", { name: "Brand logo" }).click();
+  await page.locator("#brand-color").fill("#ff2d55");
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await page.getByRole("button", { name: "Tạo Demo", exact: true }).click();
+  await expect(page).toHaveURL(/\/ready$/);
+
+  const client = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  const viewer = await client.newPage();
+  await viewer.goto(`${baseURL}/flow-demo`);
+  // Only Mobile is on, so it opens there whatever the screen size.
+  await expect(viewer.getByRole("button", { name: "Mobile" })).toHaveCSS("background-color", "rgb(255, 45, 85)");
+  const flows = viewer.getByRole("region", { name: "Flow list" });
+  await expect(flows.getByRole("button")).toHaveText(["Đặt lịch", "Thanh toán"]);
+  await viewer.keyboard.press("s");
+  await expect(viewer.locator('iframe[src*="node-id=7-7"]')).toBeAttached();
+  await viewer.keyboard.press("s");
+  await expect(viewer.locator('iframe[src*="node-id=8-8"]')).toBeAttached();
+  await viewer.keyboard.press("w");
+  await expect(viewer.locator('iframe[src*="node-id=7-7"]')).toBeAttached();
   await client.close();
 });

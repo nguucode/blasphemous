@@ -7,13 +7,12 @@ import { CSS3DObject, CSS3DRenderer } from "three/addons/renderers/CSS3DRenderer
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
-import { PHONE_MODEL } from "@/lib/phone-model";
+import { DEVICE_MODELS, type ModelId } from "@/lib/device-models";
 
 // Screen content is a real DOM node (the Figma iframe) placed by CSS3DRenderer underneath a
 // transparent WebGL canvas. The model's own screen mesh punches a hole in the canvas so the
 // iframe shows through and stays clickable at any angle; the body occludes it from behind.
 
-export const SCREEN_CSS_WIDTH = 393; // iPhone logical points; height follows the model's screen aspect
 const FOV = 30;
 const MAX_TILT_X = 0.6;
 // A 1.5× canvas looks the same on Retina and draws 44% fewer pixels than 2× (75% fewer than a 3× phone).
@@ -53,29 +52,59 @@ function cornerRadius(mesh: THREE.Mesh, box: THREE.Box3) {
   return nearest / 2 / (1 - Math.SQRT1_2);
 }
 
-// Loads the model in millimetres, facing +z, centred on the origin.
-async function loadPhone() {
-  const { scene: model } = await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(PHONE_MODEL.url);
+const holeMaterial = (polygonOffsetFactor: number) =>
+  // Writes alpha 0 so the CSS3D iframe shows through.
+  new THREE.MeshBasicMaterial({
+    color: 0x000000, opacity: 0, blending: THREE.NoBlending, polygonOffset: true, polygonOffsetFactor, polygonOffsetUnits: polygonOffsetFactor,
+  });
+
+// Loads the model in millimetres, facing +z, centred on the origin. Returns the screen's box and corner radius.
+async function loadModel(id: ModelId) {
+  const m = DEVICE_MODELS[id];
+  const { scene: model } = await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(m.url);
+  const device = new THREE.Group();
+  device.add(model);
+  const glass: THREE.MeshStandardMaterial[] = [];
+
+  if (m.kind === "tablet") {
+    // Already in mm and centred, screen facing +z.
+    if (m.bezel) {
+      const { w, h, radius, z } = m.bezel;
+      const bezel = new THREE.Mesh(new THREE.ShapeGeometry(roundedRect(w, h, radius), 24), new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 0.15 }));
+      bezel.position.z = z;
+      device.add(bezel);
+      glass.push(bezel.material);
+    }
+    device.traverse((o) => {
+      if (o instanceof THREE.Mesh && (o.material as THREE.Material).name === m.glass) glass.push(o.material as THREE.MeshStandardMaterial);
+    });
+    const { w, h, radius, x = 0, y, z } = m.screen;
+    // A hair in front of the glass; pulled forward in depth too so it never z-fights with it.
+    const hole = new THREE.Mesh(new THREE.ShapeGeometry(roundedRect(w, h, radius), 24), holeMaterial(-1));
+    hole.position.set(x, y, z + 0.05);
+    device.add(hole);
+    device.updateMatrixWorld(true);
+    return { device, glass, screen: new THREE.Box3().setFromObject(hole), screenRadius: radius, body: new THREE.Box3().setFromObject(device).getSize(new THREE.Vector3()) };
+  }
+
   model.scale.setScalar(1000); // metres → mm
   model.rotation.y = Math.PI; // model's screen faces -z
-  const phone = new THREE.Group();
-  phone.add(model);
-  phone.updateMatrixWorld(true);
-  model.position.sub(new THREE.Box3().setFromObject(phone).getCenter(new THREE.Vector3()));
-  phone.updateMatrixWorld(true);
+  device.updateMatrixWorld(true);
+  model.position.sub(new THREE.Box3().setFromObject(device).getCenter(new THREE.Vector3()));
+  device.updateMatrixWorld(true);
 
   let screenMesh: THREE.Mesh | undefined;
   let logoMesh: THREE.Mesh | undefined;
   let panel: THREE.Material | undefined;
   let islandMesh: THREE.Mesh | undefined;
-  phone.traverse((o) => {
+  device.traverse((o) => {
     if (!(o instanceof THREE.Mesh)) return;
     const material = o.material as THREE.Material;
-    if (material.name === PHONE_MODEL.screenMaterial) screenMesh = o;
-    if (material.name === PHONE_MODEL.logo.material) logoMesh = o;
-    if (material.name === PHONE_MODEL.logo.paintAs) panel = material;
-    if (PHONE_MODEL.hiddenMaterials.includes(material.name)) o.visible = false;
-    if (material.name === PHONE_MODEL.islandMaterial) islandMesh = o;
+    if (material.name === m.screenMaterial) screenMesh = o;
+    if (material.name === m.logo.material) logoMesh = o;
+    if (material.name === m.logo.paintAs) panel = material;
+    if (m.hiddenMaterials.includes(material.name)) o.visible = false;
+    if (material.name === m.islandMaterial) islandMesh = o;
   });
   if (logoMesh && panel) logoMesh.material = panel;
   if (islandMesh) {
@@ -87,25 +116,24 @@ async function loadPhone() {
     );
     capsule.position.set(...box.getCenter(new THREE.Vector3()).toArray());
     capsule.position.z = box.max.z + 0.05;
-    phone.add(capsule);
+    device.add(capsule);
   }
-  if (!screenMesh) throw new Error(`Model has no ${PHONE_MODEL.screenMaterial} mesh`);
-  // Writes alpha 0 so the CSS3D iframe shows through. Pushed back a hair so the Dynamic Island
-  // and front camera, which sit in the same plane, win the depth test.
-  screenMesh.material = new THREE.MeshBasicMaterial({
-    color: 0x000000, opacity: 0, blending: THREE.NoBlending, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1,
-  });
+  if (!screenMesh) throw new Error(`Model has no ${m.screenMaterial} mesh`);
+  // Pushed back a hair so the Dynamic Island and front camera, which sit in the same plane, win the depth test.
+  screenMesh.material = holeMaterial(1);
 
   const screen = new THREE.Box3().setFromObject(screenMesh);
   return {
-    phone,
+    device,
+    glass,
     screen,
     screenRadius: cornerRadius(screenMesh, screen),
-    body: new THREE.Box3().setFromObject(phone).getSize(new THREE.Vector3()),
+    body: new THREE.Box3().setFromObject(device).getSize(new THREE.Vector3()),
   };
 }
 
-export function Phone3D({ children, resetSignal }: { children: ReactNode; resetSignal: number }) {
+export function Device3D({ model, children, resetSignal }: { model: ModelId; children: ReactNode; resetSignal: number }) {
+  const cssWidth = DEVICE_MODELS[model].cssWidth;
   const containerRef = useRef<HTMLDivElement>(null);
   const target = useRef({ x: 0, y: 0 });
   const currentY = useRef(0);
@@ -113,7 +141,7 @@ export function Phone3D({ children, resetSignal }: { children: ReactNode; resetS
   const [loaded, setLoaded] = useState<boolean | "error">(false);
   const [screenEl] = useState(() => {
     const el = document.createElement("div");
-    Object.assign(el.style, { width: `${SCREEN_CSS_WIDTH}px`, background: "#000", backfaceVisibility: "hidden" });
+    Object.assign(el.style, { width: `${cssWidth}px`, background: "#000", backfaceVisibility: "hidden" });
     return el;
   });
 
@@ -127,7 +155,7 @@ export function Phone3D({ children, resetSignal }: { children: ReactNode; resetS
   useEffect(() => {
     const container = containerRef.current!;
     // Start the model download before the renderer and environment are built (they take a few hundred ms).
-    const phoneLoading = loadPhone();
+    const loading = loadModel(model);
     const scene = new THREE.Scene();
     const cssScene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(FOV, 1, 1, 2000);
@@ -198,20 +226,22 @@ export function Phone3D({ children, resetSignal }: { children: ReactNode; resetS
     };
 
     let disposed = false;
-    phoneLoading.then(
-      ({ phone, screen, screenRadius, body: size }) => {
+    loading.then(
+      ({ device, glass, screen, screenRadius, body: size }) => {
         if (disposed) return;
-        rotor.add(phone);
+        // The front glass mirrors RoomEnvironment's ceiling panels as a white glare; keep the bezel near-black.
+        for (const g of glass) Object.assign(g, { envMap: scene.environment, envMapIntensity: 0.15 });
+        rotor.add(device);
         // Turn in from an angle on first show, like a product reveal.
         if (!matchMedia("(prefers-reduced-motion: reduce)").matches) rotor.rotation.set(0.12, -0.9, 0);
         const w = screen.max.x - screen.min.x;
         const h = screen.max.y - screen.min.y;
-        screenEl.style.height = `${Math.round((SCREEN_CSS_WIDTH * h) / w)}px`;
+        screenEl.style.height = `${Math.round((cssWidth * h) / w)}px`;
         // Outside the phone's silhouette the canvas is transparent, so the iframe's own corners must be rounded too.
-        screenEl.style.borderRadius = `${(SCREEN_CSS_WIDTH * screenRadius) / w}px`;
+        screenEl.style.borderRadius = `${(cssWidth * screenRadius) / w}px`;
         screenEl.style.overflow = "hidden";
         const obj = new CSS3DObject(screenEl);
-        obj.scale.setScalar(w / SCREEN_CSS_WIDTH);
+        obj.scale.setScalar(w / cssWidth);
         obj.position.copy(screen.getCenter(new THREE.Vector3()));
         cssRotor.add(obj);
         body = size;
@@ -267,13 +297,13 @@ export function Phone3D({ children, resetSignal }: { children: ReactNode; resetS
       css.domElement.remove();
       gl.domElement.remove();
     };
-  }, [screenEl]);
+  }, [screenEl, model, cssWidth]);
 
   return (
     <div ref={containerRef} className="relative h-full w-full cursor-grab touch-pan-y select-none active:cursor-grabbing">
       {loaded !== true && (
         <p className="pointer-events-none absolute inset-0 z-10 grid place-items-center text-sm text-ink-secondary">
-          {loaded === "error" ? "Không tải được mô hình điện thoại." : "Đang tải mô hình…"}
+          {loaded === "error" ? "Không tải được mô hình thiết bị." : "Đang tải mô hình…"}
         </p>
       )}
       {createPortal(children, screenEl)}

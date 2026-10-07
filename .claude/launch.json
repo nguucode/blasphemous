@@ -19,6 +19,15 @@
         "npx pnpm@12.6.0 build && npx pnpm@12.6.0 start -p 3200"
       ],
       "port": 3200
+    },
+    {
+      "name": "web-local-db",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "node e2e/test-db.mjs & E2E_FAKE_AUTH=1 DATABASE_URL=postgres://postgres@127.0.0.1:5433/postgres NEXT_DIST_DIR=.next-e2e DEMO_HOST= npx next dev -p 3100"
+      ],
+      "port": 3100
     }
   ]
 }

@@ -10,15 +10,18 @@ Beta, and a personal project by [ontheshore](https://ontheshore.biz). The interf
 
 ## Features
 
-- **One link for every device.** Paste a Figma prototype link for phone, tablet and/or desktop. Viewers switch devices without reloading; desktop can scale to 1280, 1440 or 1920 wide.
-- **3D iPhone.** The real Figma embed sits inside a rotatable iPhone model and stays interactive at any angle.
+- **One link for every device.** Turn on Desktop, Tablet and/or Mobile and paste a Figma prototype link for each. Every Device turned on is a tab; viewers switch without reloading and land on the tab that fits their screen.
+- **3D devices.** Mobile is a 3D iPhone 17 Pro Max, Tablet a 3D iPad Pro 12.9″ or iPad Air 11″; the real Figma embed sits inside and stays interactive at any angle. Desktop is a monitor at 1280, 1440 or 1920 wide.
+- **Flow list.** Read the file's flows once with a Figma personal access token (used for that one request, never stored), or add a flow by link. Flows are grouped by Device, whether each Device has its own Figma page or they share one.
+- **Keyboard.** W/S: previous/next flow. D/A: next/previous screen, through the Figma Embed API (needs `NEXT_PUBLIC_FIGMA_CLIENT_ID`).
+- **Brand.** Logo (PNG/SVG), brand colour for the selected tab and flow, and a background colour or image.
 - **Live Figma.** Nothing is imported: edit the prototype in Figma and the Demo follows.
 - **Clean links that last.** Each Demo gets its own slug. Renaming keeps the old link working, and a slug is never given to anyone else, even after deletion.
 - **No sign-up.** Creating a Demo starts an anonymous session tied to the browser (one Demo per browser during the Beta). Google and magic-link sign-in exist in the code but are switched off.
 
 ## How it works
 
-The Figma prototype is an ordinary `<iframe>` rendered by three.js's `CSS3DRenderer`, underneath a transparent WebGL canvas that draws the phone. The model's own screen mesh writes transparent pixels, punching a hole through which the iframe shows, and the phone body hides it when you turn the phone around. See [`src/components/phone-3d.tsx`](src/components/phone-3d.tsx).
+The Figma prototype is an ordinary `<iframe>` rendered by three.js's `CSS3DRenderer`, underneath a transparent WebGL canvas that draws the device. The model's screen writes transparent pixels, punching a hole through which the iframe shows, and the device body hides it when you turn it around. See [`src/components/device-3d.tsx`](src/components/device-3d.tsx).
 
 ## Stack
 
@@ -40,7 +43,8 @@ Requirements: Node.js 20.9 or newer, a free [Supabase](https://supabase.com) pro
    ```bash
    pnpm db:migrate
    ```
-5. Start the app at http://localhost:3000:
+5. Optional: for the D/A shortcuts, create an OAuth app at [figma.com/developers/apps](https://www.figma.com/developers/apps), add your site's origin (and `http://localhost:3000`) as an embed origin, and set `NEXT_PUBLIC_FIGMA_CLIENT_ID`.
+6. Start the app at http://localhost:3000:
    ```bash
    pnpm dev
    ```
@@ -75,10 +79,11 @@ The first run downloads Chromium (`npx playwright install chromium`).
 |---|---|
 | `/` | Homepage with a live sample Demo |
 | `/try` | Playground: paste a link and preview it, nothing saved |
-| `/app/new` | Create a Demo, with a live preview |
+| `/app/new` | Create a Demo, in the same layout clients see |
 | `/app` | Your Demos (this browser) |
 | `/app/demos/[id]` | Edit, hide or delete a Demo |
 | `/[slug]` | The page clients see |
+| `/api/media/[id]/[kind]` | A published Demo's logo or background image (`kind`: `logo`, `background`) |
 | `/privacy`, `/terms` | Privacy and terms |
 
 ## Project layout
@@ -86,9 +91,9 @@ The first run downloads Chromium (`npx playwright install chromium`).
 ```
 src/
   app/                 routes (see above), server actions in app/app/actions.ts
-  components/          phone-3d.tsx (3D iPhone), device-view.tsx (device switcher and stage)
+  components/          device-3d.tsx (3D iPhone/iPad), device-view.tsx (switcher and stage), demo-shell.tsx (Demo layout, Flow list, shortcuts)
   db/                  schema.ts, repo.ts (data rules) and their tests
-  lib/                 figma-link.ts, demo-rules.ts, slug.ts, session.ts, supabase/
+  lib/                 figma-link.ts, figma-flows.ts, devices.ts, device-models.ts, demo-rules.ts, slug.ts, session.ts, supabase/
   proxy.ts             Supabase session refresh
 drizzle/               SQL migrations
 public/models/         the iPhone model
@@ -100,7 +105,7 @@ The live app runs on Cloudflare Workers through [OpenNext](https://opennext.js.o
 
 1. `pnpm wrangler login`
 2. `pnpm wrangler secret put DATABASE_URL` (the Transaction pooler string)
-3. Put `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in `.env.local`: they are built into the browser bundle.
+3. Put `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (and, for D/A, `NEXT_PUBLIC_FIGMA_CLIENT_ID`) in `.env.local`: they are built into the browser bundle.
 4. `pnpm run deploy` builds and uploads. `pnpm preview` runs the same build locally in workerd, reading secrets from `.dev.vars`.
 
 In Supabase, add `https://<your domain>/**` to Redirect URLs.

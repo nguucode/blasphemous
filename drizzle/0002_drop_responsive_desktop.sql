@@ -1,0 +1,1 @@
+ALTER TABLE "demos" DROP COLUMN "responsive_desktop";

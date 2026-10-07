@@ -1,6 +1,6 @@
 import { and, eq, isNull, ne, sql } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
-import type { Device } from "@/components/device-view";
+import { DEFAULT_DEVICES, type Device } from "@/lib/devices";
 import type { DemoValue } from "@/lib/demo-rules";
 import { isReservedSlug } from "@/lib/slug";
 import { demos, slugRedirects } from "./schema";
@@ -34,8 +34,12 @@ const toRecord = (r: Row): DemoRecord => ({
   nodeIds: Object.fromEntries(
     ([["phone", r.phoneNodeId], ["tablet", r.tabletNodeId], ["desktop", r.desktopNodeId]] as const).filter(([, v]) => v),
   ) as Partial<Record<Device, string>>,
+  devices: { ...DEFAULT_DEVICES, ...r.devices },
+  flows: r.flows,
+  brandColor: r.brandColor,
   backgroundColor: r.backgroundColor,
-  responsiveDesktop: r.responsiveDesktop,
+  backgroundImage: r.backgroundImage,
+  logo: r.logo,
   isPublished: r.isPublished,
   createdAt: r.createdAt.toISOString(),
   updatedAt: r.updatedAt.toISOString(),
@@ -48,8 +52,12 @@ const toColumns = (input: DemoInput) => ({
   phoneNodeId: input.nodeIds.phone ?? null,
   tabletNodeId: input.nodeIds.tablet ?? null,
   desktopNodeId: input.nodeIds.desktop ?? null,
+  devices: input.devices,
+  flows: input.flows,
+  brandColor: input.brandColor,
   backgroundColor: input.backgroundColor,
-  responsiveDesktop: input.responsiveDesktop,
+  backgroundImage: input.backgroundImage,
+  logo: input.logo,
 });
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -162,4 +170,15 @@ export async function resolveSlug(q: Q, slug: string): Promise<{ demo: DemoRecor
     .innerJoin(demos, eq(demos.id, slugRedirects.demoId))
     .where(eq(slugRedirects.slug, slug));
   return redirect ? { redirectTo: redirect.slug } : undefined;
+}
+
+// A brand image of a published, not-deleted Demo, for /api/media.
+export async function findPublishedMedia(q: Q, id: string, kind: "logo" | "background") {
+  if (!UUID.test(id)) return undefined;
+  const column = kind === "logo" ? demos.logo : demos.backgroundImage;
+  const [row] = await q
+    .select({ url: column })
+    .from(demos)
+    .where(and(eq(demos.id, id), eq(demos.isPublished, true), isNull(demos.deletedAt)));
+  return row?.url ?? undefined;
 }

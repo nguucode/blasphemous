@@ -8,6 +8,7 @@ test("rename, hide and delete a Demo", async ({ page, browser, request }) => {
 
   // Rename: a confirmation, then the old link redirects permanently.
   await page.goto(`/app/demos/${id}`);
+  await page.getByRole("button", { name: "Cài đặt Demo" }).click();
   await page.getByLabel("Demo Link").fill("studio-acme-v2");
   page.once("dialog", (dialog) => {
     expect(dialog.message()).toContain("studio-acme-v2");
@@ -24,6 +25,7 @@ test("rename, hide and delete a Demo", async ({ page, browser, request }) => {
 
   // Hide: clients get the "no longer available" page.
   await page.goto(`/app/demos/${id}`);
+  await page.getByRole("button", { name: "Cài đặt Demo" }).click();
   await page.getByRole("switch").last().click();
   await expect(page.getByRole("switch").last()).toHaveAttribute("aria-checked", "false");
   const hidden = await request.get("/studio-acme-v2");
@@ -41,6 +43,7 @@ test("rename, hide and delete a Demo", async ({ page, browser, request }) => {
   const other = await browser.newContext();
   const form = await other.newPage();
   await form.goto("/app/new");
+  await form.getByRole("button", { name: "Cài đặt Demo" }).click();
   await form.getByLabel("Demo Link").fill("studio-acme-v2");
   await form.getByLabel("Demo Link").blur();
   await expect(form.getByText("Đường dẫn này đã có người dùng.")).toBeVisible();

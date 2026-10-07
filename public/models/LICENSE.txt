@@ -7,3 +7,15 @@ License: CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)
 Changes: compressed (meshopt geometry, WebP textures at 512 px, screen texture removed).
 At runtime the app hides the front glass, repaints the Apple logo with the back panel
 material and draws a solid Dynamic Island. Credit must stay on every page that shows it.
+
+"Ipad Pro 12.9 (2020)" by Konstantin Koretskyi
+Source: https://sketchfab.com/3d-models/ipad-pro-129-2020-f0f7674522124f3bbc2d0f898963457e
+License: CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)
+
+"Ipad Air 5 (FREE)" by Artbor
+Source: https://sketchfab.com/3d-models/628ab0359d774af480be8eda9de70272
+License: CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)
+
+Both iPads come from kusabimaru-models (https://github.com/nguucode/kusabimaru-models), modified:
+logos removed, screen glass blanked, re-oriented, scaled to millimetres, centred, meshes simplified and
+compressed (meshopt), textures WebP. Credit must stay on every page that shows them.

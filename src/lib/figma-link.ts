@@ -23,7 +23,10 @@ export function parseFigmaLink(input: string): ParsedFigmaLink {
   return { ok: true, fileKey, nodeId: raw.replaceAll("-", ":") };
 }
 
-export function buildEmbedUrl({ fileKey, nodeId, responsive }: { fileKey: string; nodeId: string; responsive: boolean }) {
+// Figma Embed API (D/A shortcuts) needs an OAuth app's client id; without one the prototype still plays.
+export const FIGMA_CLIENT_ID = process.env.NEXT_PUBLIC_FIGMA_CLIENT_ID || undefined;
+
+export function buildEmbedUrl({ fileKey, nodeId, clientId }: { fileKey: string; nodeId: string; clientId?: string }) {
   const params = new URLSearchParams({
     "node-id": nodeId.replaceAll(":", "-"),
     "starting-point-node-id": nodeId,
@@ -32,7 +35,8 @@ export function buildEmbedUrl({ fileKey, nodeId, responsive }: { fileKey: string
     "hotspot-hints": "false",
     "viewport-controls": "false",
     scaling: "contain",
-    "content-scaling": responsive ? "responsive" : "fixed",
+    "content-scaling": "fixed",
   });
+  if (clientId) params.set("client-id", clientId);
   return `https://embed.figma.com/proto/${encodeURIComponent(fileKey)}?${params}`;
 }

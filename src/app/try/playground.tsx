@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { DEVICES, DeviceStage, DeviceSwitcher, ModelCredit, type Device, type DeviceLink } from "@/components/device-view";
+import { DEVICES, DeviceStage, DeviceSwitcher, ModelCredit, StageCredit, type Device, type DeviceLink } from "@/components/device-view";
 import { LINK_ERRORS } from "@/lib/demo-rules";
 import { parseFigmaLink } from "@/lib/figma-link";
 
@@ -131,6 +131,11 @@ export function Playground() {
         >
           Reset {label}
         </button>
+        {device === "tablet" && (
+          <p className="px-2 pb-1 text-xs text-ink-secondary">
+            <StageCredit device="tablet" />
+          </p>
+        )}
       </form>
     </main>
   );

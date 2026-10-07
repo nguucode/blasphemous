@@ -1,14 +1,13 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { getDb } from "@/db";
-import { deviceLinks, listDemos } from "@/db/repo";
-import { FORM_DEVICES } from "@/lib/demo-rules";
+import { listDemos } from "@/db/repo";
+import { DEVICES } from "@/lib/devices";
 import { DEMO_LIMIT, demoBase, requireDesigner } from "@/lib/session";
 import { moreDemosMailto } from "@/lib/site";
 import { DemoLinkCell } from "./_components/copy-button";
 
 // Dashboard, spec 8.3.
-const DEVICE_LABEL = { phone: "Phone", tablet: "Tablet", desktop: "Desktop" } as const;
 const cta =
   "inline-flex min-h-11 items-center rounded-full bg-cta px-5 text-[15px] text-white transition-transform duration-150 hover:bg-cta-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-link active:scale-[0.97]";
 
@@ -85,7 +84,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/app">) {
                     <DemoLinkCell demoBase={base} slug={d.slug} />
                   </td>
                   <td className="px-6 py-3 text-ink-secondary">
-                    {FORM_DEVICES.filter((x) => deviceLinks(d)[x]).map((x) => DEVICE_LABEL[x]).join(" · ")}
+                    {DEVICES.filter((x) => d.devices[x.id].enabled).map((x) => x.label).join(" · ")}
                   </td>
                   <td className="px-6 py-3">
                     <span className={d.isPublished ? "text-[#30d158]" : "text-ink-secondary"}>{d.isPublished ? "Công khai" : "Đang ẩn"}</span>
