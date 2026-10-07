@@ -1,104 +1,44 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
-import { createClient } from "@/lib/supabase/browser";
+import { useFormStatus } from "react-dom";
+import { signInWithGoogle } from "./actions";
 
-const callbackUrl = (next: string) => `${location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
+const ERRORS = {
+  callback: "Chưa đăng nhập được. Thử lại nhé.",
+  google: "Chưa kết nối được Google. Thử lại sau ít phút.",
+};
 
-export function LoginForm({ next, failed }: { next: string; failed: boolean }) {
-  const [email, setEmail] = useState("");
-  const [state, setState] = useState<"idle" | "sending" | "sent">("idle");
-  const [error, setError] = useState(failed ? "Link đăng nhập đã hết hạn hoặc đã dùng. Thử lại nhé." : "");
-
-  const google = async () => {
-    setError("");
-    const { error } = await createClient().auth.signInWithOAuth({ provider: "google", options: { redirectTo: callbackUrl(next) } });
-    if (error) setError("Chưa đăng nhập được bằng Google. Thử lại hoặc dùng email.");
-  };
-
-  const magicLink = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return setError("Nhập một địa chỉ email hợp lệ.");
-    setError("");
-    setState("sending");
-    const { error } = await createClient().auth.signInWithOtp({ email: email.trim(), options: { emailRedirectTo: callbackUrl(next) } });
-    if (error) {
-      setState("idle");
-      if (error.status !== 429) return setError("Chưa gửi được email. Thử lại sau.");
-      // Supabase has two 429s: a per-address wait ("…after 42 seconds") and a per-hour cap for the whole project.
-      const seconds = error.message.match(/(\d+) seconds?/)?.[1];
-      return setError(
-        seconds
-          ? `Vừa gửi link tới email này. Đợi ${seconds} giây rồi thử lại.`
-          : "Đang có quá nhiều email đăng nhập được gửi. Thử lại sau ít phút, hoặc tiếp tục với Google.",
-      );
-    }
-    setState("sent");
-  };
-
-  if (state === "sent") {
-    return (
-      <div className="relative w-full max-w-sm animate-rise rounded-[28px] bg-stage-raised p-8 text-center">
-        <h1 className="text-[24px] font-semibold tracking-[-0.015em]">Kiểm tra hộp thư.</h1>
-        <p className="mt-3 text-[15px] leading-relaxed text-ink-secondary">
-          Đã gửi link đăng nhập tới <span className="text-ink">{email.trim()}</span>. Kiểm tra cả thư mục Spam.
-        </p>
-        <button type="button" onClick={() => setState("idle")} className="mt-6 min-h-11 cursor-pointer text-[15px] text-link hover:underline">
-          Dùng email khác
-        </button>
-      </div>
-    );
-  }
-
+function GoogleButton() {
+  const { pending } = useFormStatus();
   return (
-    <div className="relative flex w-full max-w-sm animate-rise flex-col gap-4 rounded-[28px] bg-stage-raised p-8">
+    <button
+      type="submit"
+      disabled={pending}
+      className="min-h-11 cursor-pointer rounded-full bg-ink text-[15px] font-medium text-stage transition-transform duration-150 hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-link active:scale-[0.98] disabled:cursor-wait disabled:opacity-60"
+    >
+      {pending ? "Đang chuyển tới Google…" : "Tiếp tục với Google"}
+    </button>
+  );
+}
+
+export function LoginForm({ next, error, anonymous }: { next: string; error?: keyof typeof ERRORS; anonymous: boolean }) {
+  return (
+    <form action={signInWithGoogle.bind(null, next)} className="relative flex w-full max-w-sm animate-rise flex-col gap-4 rounded-[28px] bg-stage-raised p-8">
       <div>
         <p className="text-[21px] font-semibold tracking-[-0.02em]">Blasphemous</p>
-        <p className="mt-1 text-[15px] text-ink-secondary">Trình chiếu prototype Figma cho khách bằng một link.</p>
+        <p className="mt-1 text-[15px] text-ink-secondary">
+          {anonymous
+            ? "Đăng nhập để giữ Demo bạn đã tạo trên trình duyệt này và tạo thêm Demo mới."
+            : "Đăng nhập để tạo và quản lý Demo trên mọi máy. Khách xem Demo không cần tài khoản."}
+        </p>
       </div>
 
-      <button
-        type="button"
-        onClick={google}
-        className="min-h-11 cursor-pointer rounded-full bg-ink text-[15px] font-medium text-stage transition-transform duration-150 hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-link active:scale-[0.98]"
-      >
-        Tiếp tục với Google
-      </button>
-
-      <div className="flex items-center gap-3 text-xs text-ink-secondary" aria-hidden>
-        <span className="h-px flex-1 bg-white/10" />
-        hoặc
-        <span className="h-px flex-1 bg-white/10" />
-      </div>
-
-      <form onSubmit={magicLink} noValidate className="flex flex-col gap-2">
-        <label htmlFor="email" className="text-[13px] font-semibold">
-          Email
-        </label>
-        <input
-          id="email"
-          type="email"
-          autoComplete="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="ban@studio.vn"
-          aria-invalid={!!error}
-          aria-describedby={error ? "login-error" : undefined}
-          className="min-h-11 rounded-xl bg-white/8 px-4 text-[15px] text-ink placeholder:text-ink-secondary focus-visible:outline-2 focus-visible:outline-link aria-invalid:outline-2 aria-invalid:outline-danger-on-stage"
-        />
-        <button
-          type="submit"
-          disabled={state === "sending"}
-          className="mt-1 min-h-11 cursor-pointer rounded-full bg-cta text-[15px] text-white transition-transform duration-150 hover:bg-cta-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-link active:scale-[0.98] disabled:cursor-wait disabled:opacity-60"
-        >
-          {state === "sending" ? "Đang gửi…" : "Gửi magic link"}
-        </button>
-      </form>
+      <GoogleButton />
 
       {error && (
-        <p id="login-error" role="alert" className="text-[13px] text-danger-on-stage">
-          {error}
+        <p role="alert" className="text-[13px] text-danger-on-stage">
+          {ERRORS[error]}
         </p>
       )}
 
@@ -113,6 +53,6 @@ export function LoginForm({ next, failed }: { next: string; failed: boolean }) {
         </Link>
         .
       </p>
-    </div>
+    </form>
   );
 }

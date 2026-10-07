@@ -17,7 +17,7 @@ Beta, and a personal project by [ontheshore](https://ontheshore.biz). The interf
 - **Brand.** Logo (PNG/SVG), brand colour for the selected tab and flow, and a background colour or image.
 - **Live Figma.** Nothing is imported: edit the prototype in Figma and the Demo follows.
 - **Clean links that last.** Each Demo gets its own slug. Renaming keeps the old link working, and a slug is never given to anyone else, even after deletion.
-- **No sign-up.** Creating a Demo starts an anonymous session tied to the browser (one Demo per browser during the Beta). Google and magic-link sign-in exist in the code but are switched off.
+- **Sign in with Google to create.** Up to three Demos per account during the Beta. Clients who open a Demo Link need no account of any kind. Demos made anonymously before sign-in existed move to the account when that browser signs in.
 
 ## How it works
 
@@ -36,7 +36,7 @@ Requirements: Node.js 20.9 or newer, a free [Supabase](https://supabase.com) pro
    pnpm install
    ```
 2. In Supabase:
-   - **Authentication → Sign In / Providers:** turn on **Allow anonymous sign-ins**.
+   - **Authentication → Sign In / Providers → Google:** turn it on with a Google OAuth client ([guide](https://supabase.com/docs/guides/auth/social-login/auth-google)). Its authorized redirect URI is `https://<project-ref>.supabase.co/auth/v1/callback`.
    - **Authentication → URL Configuration:** set Site URL to `http://localhost:3000` and add `http://localhost:3000/**` to Redirect URLs.
 3. Copy `.env.example` to `.env.local` and fill in the project URL, the publishable key and the database connection string (Supabase → Connect → Transaction pooler, port 6543).
 4. Create the tables:

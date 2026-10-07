@@ -19,9 +19,6 @@ export function DemoReady({ slug, name, demoBase }: { slug: string; name: string
           Sửa Demo
         </Link>
       </div>
-      <p className="mt-10 max-w-md text-[13px] leading-relaxed text-ink-secondary">
-        Chưa cần tài khoản: Demo được gắn với trình duyệt này. Quay lại trang này để sửa. Nếu xóa dữ liệu trình duyệt, link vẫn chạy nhưng bạn sẽ không sửa được nữa.
-      </p>
     </div>
   );
 }

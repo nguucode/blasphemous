@@ -18,12 +18,20 @@ export async function fillSettings(page: Page, { name, slug, confirm = true }: {
   await page.getByRole("button", { name: "Xong" }).click();
 }
 
+// Creating a Demo needs an account: the first visit to /app/new goes through /login, where the fake
+// sign-in (E2E_FAKE_AUTH) stands in for Google and comes straight back.
+export async function openNewDemo(page: Page) {
+  await page.goto("/app/new");
+  if (new URL(page.url()).pathname === "/login") await page.getByRole("button", { name: "Tiếp tục với Google" }).click();
+  await expect(page).toHaveURL(/\/app\/new$/);
+}
+
 // Fill the create screen the way a person does and save. Returns the Demo's id from the success URL.
 export async function createDemo(
   page: Page,
   { name, slug, phone = PHONE_LINK, desktop }: { name: string; slug?: string; phone?: string; desktop?: string },
 ) {
-  await page.goto("/app/new");
+  await openNewDemo(page);
   await fillSettings(page, { name, slug });
   await page.getByLabel(PHONE_FIELD).fill(phone);
   if (desktop) {
