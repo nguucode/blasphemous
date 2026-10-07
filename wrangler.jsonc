@@ -1,0 +1,11 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "blasphemous",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-10-07",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+  "routes": [{ "pattern": "blasphemous.ontheshore.biz", "custom_domain": true }],
+  // DATABASE_URL is a secret: `pnpm wrangler secret put DATABASE_URL`.
+  "vars": { "DEMO_HOST": "blasphemous.ontheshore.biz" }
+}

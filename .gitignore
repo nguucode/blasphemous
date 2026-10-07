@@ -50,3 +50,8 @@ next-env.d.ts
 /playwright-report/
 /test-results/
 /.next-e2e/
+
+# Cloudflare
+/.open-next/
+/.wrangler/
+.dev.vars*
