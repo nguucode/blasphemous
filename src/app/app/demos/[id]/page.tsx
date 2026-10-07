@@ -3,7 +3,8 @@ import { connection } from "next/server";
 import { getDb } from "@/db";
 import { findOwnedDemo } from "@/db/repo";
 import { demoBase, requireDesigner } from "@/lib/session";
-import { DemoEditor } from "../../_components/demo-editor";
+import { DEVICES } from "@/lib/devices";
+import { DemoEditor, type EditorDemo } from "../../_components/demo-editor";
 
 const protoLink = (fileKey: string, nodeId?: string) =>
   nodeId ? `https://www.figma.com/proto/${fileKey}/?node-id=${nodeId.replaceAll(":", "-")}&starting-point-node-id=${encodeURIComponent(nodeId)}` : "";
@@ -23,9 +24,14 @@ export default async function EditDemo({ params }: PageProps<"/app/demos/[id]">)
         id: d.id,
         name: d.name,
         slug: d.slug,
-        links: { phone: protoLink(d.fileKey, d.nodeIds.phone), tablet: protoLink(d.fileKey, d.nodeIds.tablet), desktop: protoLink(d.fileKey, d.nodeIds.desktop) },
+        devices: Object.fromEntries(
+          DEVICES.map(({ id: x }) => [x, { ...d.devices[x], link: protoLink(d.fileKey, d.nodeIds[x]) }]),
+        ) as EditorDemo["devices"],
+        flows: d.flows,
+        brandColor: d.brandColor,
         backgroundColor: d.backgroundColor,
-        responsiveDesktop: d.responsiveDesktop,
+        backgroundImage: d.backgroundImage,
+        logo: d.logo,
         isPublished: d.isPublished,
       }}
     />

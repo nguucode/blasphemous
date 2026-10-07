@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { validateDemoForm, type DemoForm, type FormErrors } from "@/lib/demo-rules";
+import { DEVICES, type Device, type Flow } from "@/lib/devices";
+import { flowsFromFile, type FigmaFile } from "@/lib/figma-flows";
 import { getDb } from "@/db";
 import { createDemo, deleteDemo, isSlugTaken, setPublished, updateDemo } from "@/db/repo";
 import { DEMO_LIMIT, getDesigner, getOrCreateDesigner } from "@/lib/session";
@@ -18,15 +20,28 @@ export type SaveResult = { ok: true; id: string; slug: string } | { ok: false; e
 
 // Actions receive whatever the request carries, not what the TypeScript types promise.
 const str = (v: unknown) => (typeof v === "string" ? v : "");
+const obj = (v: unknown) => (v && typeof v === "object" ? (v as Record<string, unknown>) : {});
+const image = (v: unknown) => (typeof v === "string" && v ? v : null);
 function normalizeForm(raw: unknown, isNew: boolean): DemoForm {
-  const f = (raw ?? {}) as Record<string, unknown>;
-  const links = (f.links ?? {}) as Record<string, unknown>;
+  const f = obj(raw);
+  const devices = obj(f.devices);
   return {
     name: str(f.name),
     slug: str(f.slug),
-    links: { phone: str(links.phone), tablet: str(links.tablet), desktop: str(links.desktop) },
+    devices: Object.fromEntries(
+      DEVICES.map(({ id }) => {
+        const d = obj(devices[id]);
+        return [id, { enabled: d.enabled === true, model: str(d.model), link: str(d.link) }];
+      }),
+    ) as DemoForm["devices"],
+    flows: (Array.isArray(f.flows) ? f.flows : []).map((x) => {
+      const flow = obj(x);
+      return { device: str(flow.device) as Device, name: str(flow.name), nodeId: str(flow.nodeId), source: str(flow.source) as Flow["source"] };
+    }),
+    brandColor: str(f.brandColor),
     backgroundColor: str(f.backgroundColor),
-    responsiveDesktop: f.responsiveDesktop === true,
+    backgroundImage: image(f.backgroundImage),
+    logo: image(f.logo),
     confirmedPublic: f.confirmedPublic === true,
     isNew,
   };
@@ -82,4 +97,33 @@ export async function removeDemo(id: string) {
   if (!r.ok) return false;
   revalidatePath("/app");
   return true;
+}
+
+export type FlowsResult = { ok: true; flows: Flow[]; missing: Device[] } | { ok: false; message: string };
+
+// Reads the file's flows once with the Designer's personal access token. The token is used for this
+// one request and never stored or logged (spec 12). Open to everyone, like creating a Demo.
+export async function fetchFigmaFlows(token: string, fileKey: string, nodeIds: Partial<Record<Device, string>>): Promise<FlowsResult> {
+  if (typeof token !== "string" || !token.trim() || typeof fileKey !== "string" || !/^[A-Za-z0-9]+$/.test(fileKey)) {
+    return { ok: false, message: "Thiếu token hoặc link Figma." };
+  }
+  const links = Object.fromEntries(
+    DEVICES.map(({ id }) => [id, obj(nodeIds)[id]]).filter(([, v]) => typeof v === "string" && /^\d+:\d+$/.test(v)),
+  ) as Partial<Record<Device, string>>;
+  let res: Response;
+  try {
+    res = await fetch(`https://api.figma.com/v1/files/${fileKey}?depth=3`, {
+      headers: { "X-Figma-Token": token.trim() },
+      cache: "no-store",
+      signal: AbortSignal.timeout(20_000),
+    });
+  } catch {
+    return { ok: false, message: "Không kết nối được Figma. Thử lại sau." };
+  }
+  if (res.status === 403 || res.status === 401) return { ok: false, message: "Token không đúng, hoặc không có quyền đọc file này." };
+  if (res.status === 404) return { ok: false, message: "Không tìm thấy file Figma này." };
+  if (res.status === 429) return { ok: false, message: "Figma đang giới hạn lượt gọi. Thử lại sau ít phút." };
+  if (!res.ok) return { ok: false, message: "Figma báo lỗi. Thử lại sau." };
+  const { flows, missing } = flowsFromFile((await res.json()) as FigmaFile, links);
+  return { ok: true, flows, missing };
 }

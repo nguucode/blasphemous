@@ -8,6 +8,20 @@
       "when": 1790484101667,
       "tag": "0000_init",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791366604694,
+      "tag": "0001_brand_devices_flows",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791366608857,
+      "tag": "0002_drop_responsive_desktop",
+      "breakpoints": true
     }
   ]
 }

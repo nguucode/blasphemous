@@ -3,7 +3,7 @@ import { sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { createDemo, deleteDemo, isSlugTaken, listDemos, resolveSlug, setPublished, updateDemo, type DemoInput, type Designer } from "./repo";
+import { createDemo, deleteDemo, findPublishedMedia, isSlugTaken, listDemos, resolveSlug, setPublished, updateDemo, type DemoInput, type Designer } from "./repo";
 import * as schema from "./schema";
 
 // Real Postgres (PGlite, in process) with the real migration: spec 10's integration tests.
@@ -14,8 +14,16 @@ const input = (slug: string, over: Partial<DemoInput> = {}): DemoInput => ({
   slug,
   fileKey: "KEY",
   nodeIds: { phone: "1:2" },
+  devices: {
+    desktop: { enabled: false, model: "1440" },
+    tablet: { enabled: false, model: "ipad-pro-12-9" },
+    phone: { enabled: true, model: "iphone-17-pro-max" },
+  },
+  flows: [],
+  brandColor: "#0071e3",
   backgroundColor: "#000000",
-  responsiveDesktop: false,
+  backgroundImage: null,
+  logo: null,
   ...over,
 });
 const LIMIT = 3;
@@ -42,9 +50,10 @@ async function created(owner: Designer, slug: string, over: Partial<DemoInput> =
 
 describe("createDemo", () => {
   it("creates a published Demo owned by the Designer, keeping each Device's node", async () => {
-    await created(ME, "acme", { nodeIds: { phone: "1:2", desktop: "5:6" }, responsiveDesktop: true });
+    const flows = [{ device: "phone" as const, name: "Login", nodeId: "1:3", source: "figma" as const }];
+    await created(ME, "acme", { nodeIds: { phone: "1:2", desktop: "5:6" }, flows, logo: "data:image/png;base64,QUJD" });
     expect(await listDemos(db, ME)).toMatchObject([
-      { slug: "acme", ownerId: ME.id, isPublished: true, deletedAt: null, nodeIds: { phone: "1:2", desktop: "5:6" }, responsiveDesktop: true },
+      { slug: "acme", ownerId: ME.id, isPublished: true, deletedAt: null, nodeIds: { phone: "1:2", desktop: "5:6" }, flows, logo: "data:image/png;base64,QUJD" },
     ]);
   });
 
@@ -116,6 +125,17 @@ describe("resolveSlug (Viewer)", () => {
     expect(await resolveSlug(db, "a-1")).toBeUndefined();
     expect(await resolveSlug(db, "a-2")).toBeUndefined();
     expect(await resolveSlug(db, "nope")).toBeUndefined();
+  });
+});
+
+describe("findPublishedMedia", () => {
+  it("serves a published Demo's brand images, nothing for a hidden one", async () => {
+    const d = await created(ME, "acme", { logo: "data:image/png;base64,QUJD" });
+    expect(await findPublishedMedia(db, d.id, "logo")).toBe("data:image/png;base64,QUJD");
+    expect(await findPublishedMedia(db, d.id, "background")).toBeUndefined();
+    await setPublished(db, ME, d.id, false);
+    expect(await findPublishedMedia(db, d.id, "logo")).toBeUndefined();
+    expect(await findPublishedMedia(db, "nope", "logo")).toBeUndefined();
   });
 });
 

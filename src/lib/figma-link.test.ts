@@ -47,7 +47,7 @@ describe("parseFigmaLink", () => {
 
 describe("buildEmbedUrl", () => {
   it("builds the embed URL from spec 7.2", () => {
-    const url = new URL(buildEmbedUrl({ fileKey: "KEY", nodeId: "3:10", responsive: false }));
+    const url = new URL(buildEmbedUrl({ fileKey: "KEY", nodeId: "3:10" }));
     expect(url.origin + url.pathname).toBe("https://embed.figma.com/proto/KEY");
     expect(Object.fromEntries(url.searchParams)).toEqual({
       "node-id": "3-10",
@@ -61,8 +61,8 @@ describe("buildEmbedUrl", () => {
     });
   });
 
-  it("uses responsive content scaling when asked", () => {
-    const url = new URL(buildEmbedUrl({ fileKey: "KEY", nodeId: "1:2", responsive: true }));
-    expect(url.searchParams.get("content-scaling")).toBe("responsive");
+  it("adds the Embed API client id when there is one", () => {
+    const url = new URL(buildEmbedUrl({ fileKey: "KEY", nodeId: "1:2", clientId: "abc" }));
+    expect(url.searchParams.get("client-id")).toBe("abc");
   });
 });
