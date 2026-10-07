@@ -52,7 +52,7 @@ export default function Privacy() {
             Figma, theo chính sách quyền riêng tư của Figma.
           </li>
           <li>
-            <strong>Vercel</strong> sẽ chạy ứng dụng khi Blasphemous được đưa lên mạng.
+            <strong>Cloudflare</strong> chạy ứng dụng và tên miền.
           </li>
         </ul>
         <p>Blasphemous không bán hay chia sẻ dữ liệu cho bên nào khác.</p>

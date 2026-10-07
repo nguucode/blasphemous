@@ -96,7 +96,18 @@ public/models/         the iPhone model
 
 ## Deploying
 
-Any Node host that runs Next.js works; Vercel is the simplest. Set the same variables as `.env.local`, plus `DEMO_HOST` to the domain that serves Demo Links (for example `blasphemous.ontheshore.biz`), and add `https://<that domain>/**` to Supabase's Redirect URLs.
+The live app runs on Cloudflare Workers through [OpenNext](https://opennext.js.org/cloudflare). The worker name, domain and `DEMO_HOST` are in [`wrangler.jsonc`](wrangler.jsonc); change them for your own deployment.
+
+1. `pnpm wrangler login`
+2. `pnpm wrangler secret put DATABASE_URL` (the Transaction pooler string)
+3. Put `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in `.env.local`: they are built into the browser bundle.
+4. `pnpm run deploy` builds and uploads. `pnpm preview` runs the same build locally in workerd, reading secrets from `.dev.vars`.
+
+In Supabase, add `https://<your domain>/**` to Redirect URLs.
+
+Build from an APFS or HFS+ disk. On exFAT and other non-Apple drives macOS writes `._*` files next to every build file, and OpenNext fails on them.
+
+Any other Node host that runs Next.js also works: set the same variables as `.env.local`, plus `DEMO_HOST`.
 
 ## License
 
