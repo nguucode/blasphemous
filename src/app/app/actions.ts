@@ -6,7 +6,7 @@ import { DEVICES, type Device, type Flow } from "@/lib/devices";
 import { flowsFromFile, type FigmaFile } from "@/lib/figma-flows";
 import { getDb } from "@/db";
 import { createDemo, deleteDemo, isSlugTaken, setPublished, updateDemo } from "@/db/repo";
-import { DEMO_LIMIT, getDesigner, getOrCreateDesigner } from "@/lib/session";
+import { DEMO_LIMIT, getDesigner } from "@/lib/session";
 
 // Every action checks the Designer and re-validates input: actions are reachable by direct POST (spec 7.5).
 
@@ -51,21 +51,22 @@ export async function saveDemo(form: DemoForm, id?: string): Promise<SaveResult>
   if (id !== undefined && typeof id !== "string") return { ok: false, errors: {}, message: "Không tìm thấy Demo này." };
   const checked = validateDemoForm(normalizeForm(form, !id));
   if (!checked.ok) return checked;
-  // Creating is open to everyone: the first save gives this browser an anonymous Designer.
   let designer;
   try {
-    designer = id ? await designerOrThrow() : await getOrCreateDesigner();
+    designer = await getDesigner();
   } catch (e) {
     console.error(e);
     return { ok: false, errors: {}, message: "Chưa lưu được Demo. Thử lại sau ít phút." };
   }
+  // Creating needs an account; an anonymous Designer from before sign-in may still edit their Demo.
+  if (!designer || (!id && designer.isAnonymous)) return { ok: false, errors: {}, message: "Đăng nhập để lưu Demo." };
   const db = getDb();
 
   if (!id) {
     const r = await createDemo(db, designer, checked.value, DEMO_LIMIT);
     if (!r.ok) {
       return r.error === "limit"
-        ? { ok: false, errors: {}, message: `Mỗi trình duyệt tạo được ${DEMO_LIMIT} Demo. Xóa Demo hiện có để tạo mới.` }
+        ? { ok: false, errors: {}, message: `Mỗi tài khoản tạo được ${DEMO_LIMIT} Demo. Xóa một Demo để tạo mới.` }
         : { ok: false, errors: { slug: "Đường dẫn này đã có người dùng." } };
     }
     revalidatePath("/app");
@@ -102,7 +103,7 @@ export async function removeDemo(id: string) {
 export type FlowsResult = { ok: true; flows: Flow[]; missing: Device[] } | { ok: false; message: string };
 
 // Reads the file's flows once with the Designer's personal access token. The token is used for this
-// one request and never stored or logged (spec 12). Open to everyone, like creating a Demo.
+// one request and never stored or logged (spec 12). Open to everyone: it only reads with the caller's own token.
 export async function fetchFigmaFlows(token: string, fileKey: string, nodeIds: Partial<Record<Device, string>>): Promise<FlowsResult> {
   if (typeof token !== "string" || !token.trim() || typeof fileKey !== "string" || !/^[A-Za-z0-9]+$/.test(fileKey)) {
     return { ok: false, message: "Thiếu token hoặc link Figma." };

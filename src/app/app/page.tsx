@@ -13,7 +13,7 @@ const cta =
 
 export default async function Dashboard({ searchParams }: PageProps<"/app">) {
   await connection();
-  const designer = await requireDesigner();
+  const designer = await requireDesigner("/app");
   const demos = await listDemos(getDb(), designer);
   const full = demos.length >= DEMO_LIMIT;
   const base = await demoBase();
@@ -21,6 +21,14 @@ export default async function Dashboard({ searchParams }: PageProps<"/app">) {
 
   return (
     <div className="animate-rise">
+      {designer.isAnonymous && (
+        <p className="mb-6 rounded-[18px] bg-stage-raised px-5 py-3 text-[15px] text-ink">
+          Demo này đang gắn với trình duyệt.{" "}
+          <Link href="/login?next=/app" className="text-link hover:underline">
+            Đăng nhập Google để giữ nó và tạo tới {DEMO_LIMIT} Demo ›
+          </Link>
+        </p>
+      )}
       {saved && <p className="mb-6 rounded-[18px] bg-stage-raised px-5 py-3 text-[15px] text-ink" role="status">Đã lưu.</p>}
 
       <div className="flex flex-wrap items-end justify-between gap-4">
@@ -45,7 +53,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/app">) {
 
       {full && (
         <p className="mt-4 text-[15px] text-ink-secondary">
-          Mỗi trình duyệt tạo được {DEMO_LIMIT} Demo. Xóa một Demo để tạo mới.{" "}
+          Mỗi tài khoản tạo được {DEMO_LIMIT} Demo. Xóa một Demo để tạo mới.{" "}
           <a href={moreDemosMailto} className="text-link hover:underline">
             Cần thêm? Báo cho mình ›
           </a>

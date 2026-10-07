@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: "Quyền riêng tư · Blasphemous" }
 // Spec 8.8. Keep in step with what the app really stores (src/db/schema.ts) and where it runs.
 export default function Privacy() {
   return (
-    <LegalPage title="Quyền riêng tư" updated="28/09/2026">
+    <LegalPage title="Quyền riêng tư" updated="07/10/2026">
       <section>
         <p>
           Blasphemous là một sản phẩm cá nhân của {SITE.maker}, đang ở giai đoạn Beta. Trang này nói rõ Blasphemous lưu gì, để
@@ -26,17 +26,16 @@ export default function Privacy() {
           </li>
           <li>Trạng thái Công khai / Ẩn, thời điểm tạo, sửa, xóa.</li>
           <li>
-            Một mã người dùng ẩn danh. Hiện chưa cần tài khoản: lần lưu đầu tiên tạo một tài khoản ẩn danh không có email, gắn với
-            trình duyệt của bạn bằng cookie đăng nhập.
+            Tài khoản của bạn: bạn đăng nhập bằng Google, nên Blasphemous nhận email, tên và ảnh đại diện mà Google gửi kèm. Người
+            xem Demo không cần tài khoản.
           </li>
         </ul>
-        <p>Nếu sau này bạn đăng nhập bằng Google hoặc email, Blasphemous lưu thêm địa chỉ email đó.</p>
       </section>
 
       <section>
         <h2>Cookie</h2>
         <p>
-          Blasphemous chỉ dùng cookie đăng nhập của Supabase, để nhận ra trình duyệt đã tạo Demo và cho phép sửa lại. Không có
+          Blasphemous chỉ dùng cookie đăng nhập của Supabase, để nhận ra bạn đã đăng nhập và cho phép sửa Demo của mình. Không có
           cookie quảng cáo, không có công cụ phân tích hay theo dõi. Người xem Demo Link không nhận cookie nào của Blasphemous.
         </p>
       </section>
@@ -70,8 +69,8 @@ export default function Privacy() {
           Demo.
         </p>
         <p>
-          Nếu bạn xóa dữ liệu trình duyệt, cookie đăng nhập mất theo: Demo và link vẫn còn, nhưng bạn không sửa được nữa. Email
-          cho Blasphemous nếu cần lấy lại quyền sửa.
+          Demo tạo trước khi có đăng nhập được gắn với trình duyệt đã tạo nó. Đăng nhập Google trên chính trình duyệt đó để chuyển
+          Demo sang tài khoản. Nếu đã xóa dữ liệu trình duyệt, email cho Blasphemous để lấy lại quyền sửa.
         </p>
       </section>
     </LegalPage>

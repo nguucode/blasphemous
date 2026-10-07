@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { createDemo } from "./helpers";
+import { createDemo, openNewDemo } from "./helpers";
 
 // Spec §7.3 and §8.4: renaming keeps the old link, hiding and deleting take the Demo offline,
 // and a deleted Demo's slug is never given to someone else.
@@ -37,12 +37,12 @@ test("rename, hide and delete a Demo", async ({ page, browser, request }) => {
   await page.getByRole("button", { name: "Xóa Demo" }).click();
   await expect(page).toHaveURL(/\/app$/);
   await expect(page.getByRole("heading", { name: "Chưa có Demo nào." })).toBeVisible();
-  await expect(page.getByText("0/1 Demo")).toBeVisible();
+  await expect(page.getByText("0/3 Demo")).toBeVisible();
   expect((await request.get("/studio-acme-v2")).status()).toBe(404);
 
   const other = await browser.newContext();
   const form = await other.newPage();
-  await form.goto("/app/new");
+  await openNewDemo(form);
   await form.getByRole("button", { name: "Cài đặt Demo" }).click();
   await form.getByLabel("Demo Link").fill("studio-acme-v2");
   await form.getByLabel("Demo Link").blur();

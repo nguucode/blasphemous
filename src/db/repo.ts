@@ -160,6 +160,12 @@ export async function deleteDemo(db: Db, owner: Designer, id: string): Promise<{
   return rows.length ? { ok: true } : { ok: false, error: "not-found" };
 }
 
+// An anonymous Designer signs in: their Demos, deleted ones included (slugs stay reserved), go to the account.
+// The limit only gates creating, so an account may end up over it.
+export async function transferDemos(db: Db, fromId: string, toId: string) {
+  await db.update(demos).set({ ownerId: toId, updatedAt: new Date() }).where(eq(demos.ownerId, fromId));
+}
+
 // Viewer lookup: current slug first, then old slugs (spec 7.3). Hidden and deleted Demos are invisible.
 export async function resolveSlug(q: Q, slug: string): Promise<{ demo: DemoRecord } | { redirectTo: string } | undefined> {
   const [row] = await q.select().from(demos).where(eq(demos.slug, slug));

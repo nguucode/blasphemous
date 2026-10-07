@@ -12,7 +12,7 @@ const protoLink = (fileKey: string, nodeId?: string) =>
 export default async function EditDemo({ params }: PageProps<"/app/demos/[id]">) {
   await connection();
   const { id } = await params;
-  const designer = await requireDesigner();
+  const designer = await requireDesigner(`/app/demos/${id}`);
   // Only the owner's own, not-deleted Demos; anything else is a 404, never a 403 (spec 7.5).
   const d = await findOwnedDemo(getDb(), designer, id);
   if (!d) notFound();

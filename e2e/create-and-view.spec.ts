@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { DESKTOP_FIELD, DESKTOP_LINK, FILE_KEY, PHONE_FIELD, PHONE_LINK, fillSettings } from "./helpers";
+import { DESKTOP_FIELD, DESKTOP_LINK, FILE_KEY, PHONE_FIELD, PHONE_LINK, fillSettings, openNewDemo } from "./helpers";
 
 // Spec §10: a Designer creates a Demo, copies the link, a client opens it and switches Device.
 test("a visitor creates a Demo, copies the link, and a client views it on both devices", async ({ page, context, browser, baseURL }) => {
@@ -7,6 +7,9 @@ test("a visitor creates a Demo, copies the link, and a client views it on both d
 
   await page.goto("/");
   await page.getByRole("link", { name: "Tạo Demo miễn phí" }).click();
+  // Creating needs an account: sign in (fake Google in E2E) and land back on the form.
+  await expect(page).toHaveURL(/\/login\?next=%2Fapp%2Fnew$/);
+  await page.getByRole("button", { name: "Tiếp tục với Google" }).click();
   await expect(page).toHaveURL(/\/app\/new$/);
 
   // The slug follows the name, Vietnamese diacritics removed, until edited by hand.
@@ -34,12 +37,10 @@ test("a visitor creates a Demo, copies the link, and a client views it on both d
   await expect(page.getByRole("button", { name: "Đã copy" })).toBeVisible();
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(demoUrl);
 
-  // The Designer's list shows it; a second Demo is not allowed from this browser.
+  // The Designer's list shows it, out of three per account (the limit itself: src/db/repo.test.ts).
   await page.goto("/app");
   await expect(page.getByRole("cell", { name: "Ứng dụng Đặt Lịch" })).toBeVisible();
-  await expect(page.getByText("1/1 Demo")).toBeVisible();
-  await page.goto("/app/new");
-  await expect(page.getByRole("heading", { name: "Bạn đã có 1 Demo." })).toBeVisible();
+  await expect(page.getByText("1/3 Demo")).toBeVisible();
 
   // A client, in their own browser, opens the link.
   const client = await browser.newContext();
@@ -62,13 +63,13 @@ test("a visitor creates a Demo, copies the link, and a client views it on both d
 
   // The client cannot open the Designer's edit page.
   await viewer.goto(`/app/demos/${demoId}`);
-  await expect(viewer).toHaveURL(/\/app\/new$/);
+  await expect(viewer).toHaveURL(/\/login\?next=/);
   await client.close();
 });
 
 // Spec 12: flows added by link show in the Viewer's Flow list, filtered by Device, and W/S move between them.
 test("flows and brand colour reach the Viewer, and W/S switch flows", async ({ page, browser, baseURL }) => {
-  await page.goto("/app/new");
+  await openNewDemo(page);
   await fillSettings(page, { name: "Flow Demo", slug: "flow-demo" });
   await page.getByLabel(PHONE_FIELD).fill(PHONE_LINK);
   await page.getByRole("button", { name: /Thêm flow bằng link cho Mobile/ }).click();

@@ -1,9 +1,9 @@
 import { expect, test } from "@playwright/test";
-import { DESKTOP_FIELD, OTHER_FILE_LINK, PHONE_FIELD, PHONE_LINK, createDemo } from "./helpers";
+import { DESKTOP_FIELD, OTHER_FILE_LINK, PHONE_FIELD, PHONE_LINK, createDemo, openNewDemo } from "./helpers";
 
 // Spec §8.4: errors show on save (focus on the first one) and while typing.
 test("saving an empty form opens Demo settings on the first error and shows the rest", async ({ page }) => {
-  await page.goto("/app/new");
+  await openNewDemo(page);
   await page.getByRole("button", { name: "Tạo Demo", exact: true }).click();
   await expect(page.getByText("Nhập tên Demo.")).toBeVisible();
   await expect(page.getByText(/Đường dẫn dài 3–48 ký tự/)).toBeVisible();
@@ -14,7 +14,7 @@ test("saving an empty form opens Demo settings on the first error and shows the 
 });
 
 test("design links, links from two files and reserved slugs are refused", async ({ page }) => {
-  await page.goto("/app/new");
+  await openNewDemo(page);
   await page.getByLabel(PHONE_FIELD).fill("https://www.figma.com/design/KEY/X?node-id=1-2");
   await page.getByLabel(PHONE_FIELD).blur();
   await expect(page.getByText("Đây là link thiết kế. Mở Present trong Figma rồi bấm Copy link.")).toBeVisible();
@@ -35,7 +35,7 @@ test("a slug someone already has is refused while typing", async ({ page, browse
 
   const other = await browser.newContext();
   const form = await other.newPage();
-  await form.goto("/app/new");
+  await openNewDemo(form);
   await form.getByRole("button", { name: "Cài đặt Demo" }).click();
   await form.getByLabel("Demo Link").fill("da-co-chu");
   await form.getByLabel("Demo Link").blur();

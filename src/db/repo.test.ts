@@ -3,7 +3,7 @@ import { sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { createDemo, deleteDemo, findPublishedMedia, isSlugTaken, listDemos, resolveSlug, setPublished, updateDemo, type DemoInput, type Designer } from "./repo";
+import { createDemo, deleteDemo, findPublishedMedia, isSlugTaken, listDemos, resolveSlug, setPublished, transferDemos, updateDemo, type DemoInput, type Designer } from "./repo";
 import * as schema from "./schema";
 
 // Real Postgres (PGlite, in process) with the real migration: spec 10's integration tests.
@@ -150,6 +150,23 @@ describe("ownership (spec 7.5)", () => {
 
   it("treats a malformed id as not found instead of throwing", async () => {
     expect(await setPublished(db, ME, "not-a-uuid", false)).toEqual({ ok: false, error: "not-found" });
+  });
+});
+
+describe("transferDemos", () => {
+  it("moves every Demo of an anonymous Designer to the account they sign in with, past the limit", async () => {
+    await created(ME, "m-1");
+    await created(ME, "m-2");
+    await created(ME, "m-3");
+    const anon = await created(OTHER, "anon-1");
+    await deleteDemo(db, OTHER, (await created(OTHER, "anon-gone")).id);
+
+    await transferDemos(db, OTHER.id, ME.id);
+
+    expect((await listDemos(db, ME)).map((d) => d.slug)).toEqual(["m-1", "m-2", "m-3", "anon-1"]);
+    expect(await listDemos(db, OTHER)).toEqual([]);
+    // Ownership moved with it, and the slug did not change.
+    expect(await setPublished(db, ME, anon.id, false)).toEqual({ ok: true });
   });
 });
 
