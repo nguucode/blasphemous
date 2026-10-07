@@ -40,3 +40,9 @@ export function buildEmbedUrl({ fileKey, nodeId, clientId }: { fileKey: string; 
   if (clientId) params.set("client-id", clientId);
   return `https://embed.figma.com/proto/${encodeURIComponent(fileKey)}?${params}`;
 }
+
+// Can a stranger open this file? Figma's oEmbed (no token) answers 200 for a file shared with
+// "Anyone with the link" and 403/404 otherwise; anything else says nothing either way.
+export type FigmaAccess = "public" | "private" | "unknown";
+export const figmaAccess = (status: number): FigmaAccess =>
+  status === 200 ? "public" : status === 403 || status === 404 ? "private" : "unknown";

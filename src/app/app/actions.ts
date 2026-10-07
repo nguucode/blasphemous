@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { validateDemoForm, type DemoForm, type FormErrors } from "@/lib/demo-rules";
 import { DEVICES, type Device, type Flow } from "@/lib/devices";
 import { flowsFromFile, type FigmaFile } from "@/lib/figma-flows";
+import { figmaAccess, type FigmaAccess } from "@/lib/figma-link";
 import { getDb } from "@/db";
 import { createDemo, deleteDemo, isSlugTaken, setPublished, updateDemo } from "@/db/repo";
 import { DEMO_LIMIT, getDesigner } from "@/lib/session";
@@ -82,6 +83,18 @@ export async function saveDemo(form: DemoForm, id?: string): Promise<SaveResult>
 // Read-only and open to everyone: whether a slug exists is already public through the Viewer.
 export async function isSlugAvailable(slug: string, id?: string) {
   return typeof slug === "string" && !(await isSlugTaken(getDb(), slug, typeof id === "string" ? id : undefined));
+}
+
+// Whether clients will see the prototype or Figma's sign-in wall. Open to everyone: Figma answers the same to anyone.
+export async function checkFigmaAccess(fileKey: string): Promise<FigmaAccess> {
+  if (typeof fileKey !== "string" || !/^[A-Za-z0-9]+$/.test(fileKey)) return "unknown";
+  try {
+    const url = encodeURIComponent(`https://www.figma.com/proto/${fileKey}`);
+    const res = await fetch(`https://www.figma.com/api/oembed?url=${url}`, { cache: "no-store", signal: AbortSignal.timeout(8_000) });
+    return figmaAccess(res.status);
+  } catch {
+    return "unknown";
+  }
 }
 
 export async function publishDemo(id: string, isPublished: boolean) {
